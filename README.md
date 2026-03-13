@@ -1,50 +1,35 @@
-# Company Site Directory
+# convergentmethods.com
 
-This directory hosts all public-facing company sites for Convergent Methods LLC.
+Public website for Convergent Methods LLC. Deployed via GitHub Pages.
 
 ## Structure
 
-Each domain has its own subdirectory:
-- `convergentmethods.com/` - Primary company website
-- `convergentmethods.ai/` - AI-focused company website
-- `convergentmethods.io/` - Product-focused website
+```
+index.html          ← Convergent Methods holding company page
+styles.css          ← Shared stylesheet
+llms.txt            ← Agent-readable company index (llmstxt.org spec)
+boyce/
+  index.html        ← Boyce product landing page
+  llms.txt          ← Agent-readable Boyce index
+  llms-full.txt     ← Complete Boyce agent reference
+```
 
-Each domain folder contains:
-- `index.html` - Stub website landing page
-- `CNAME` - Domain name for GitHub Pages configuration
+## Deployment
 
-## Deployment via GitHub Pages
+Push to `main` branch. GitHub Pages deploys automatically.
 
-Each domain folder is served by GitHub Pages using its CNAME file.
+- **Domain:** convergentmethods.com (DNS via Namecheap)
+- **Redirects:** convergentmethods.ai and convergentmethods.io redirect to .com
+- **HTTPS:** Auto-provisioned by GitHub via Let's Encrypt
 
-### To Deploy:
+## URLs
 
-1. **Push changes to the main branch.**
-   - Each domain folder should be in its own branch or configured as a separate GitHub Pages site
-   - Alternatively, use GitHub Actions or a monorepo structure
-
-2. **Enable GitHub Pages in the repo:**
-   - Go to Settings → Pages
-   - Select "Deploy from branch"
-   - Choose the appropriate branch (main or a domain-specific branch)
-
-3. **Configure DNS in Namecheap:**
-   - Set CNAME record for `@` (root domain) → `<your-github-username>.github.io`
-   - Set CNAME record for `www` → `<your-github-username>.github.io`
-   - Wait for DNS propagation (typically 5-30 minutes)
-
-4. **HTTPS Certificate:**
-   - GitHub will automatically issue HTTPS certificates via Let's Encrypt
-   - Certificate provisioning typically takes a few minutes after DNS propagation
+- https://convergentmethods.com — holding company page
+- https://convergentmethods.com/boyce/ — Boyce product page
+- https://convergentmethods.com/llms.txt — agent index
+- https://convergentmethods.com/boyce/llms.txt — Boyce agent index
+- https://convergentmethods.com/boyce/llms-full.txt — Boyce full agent docs
 
 ## Domain Portfolio
 
-For complete domain inventory and renewal information, see:
-- `Business/Operations/DOMAIN_PORTFOLIO.md`
-
-## Notes
-
-- Each domain's CNAME file must contain only the domain name (no trailing slash, no www prefix)
-- GitHub Pages requires the CNAME file to be in the root of the deployed branch
-- For multiple domains, consider using separate branches or GitHub Actions workflows
-
+See `ASSETS.md` at the ConvergentMethods root for complete domain inventory.

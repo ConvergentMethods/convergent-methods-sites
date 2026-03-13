@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boyce &mdash; Semantic Protocol &amp; Safety Layer for Agentic SQL</title>
+  <meta name="description" content="Give AI agents structured database intelligence. Deterministic SQL compiler, NULL trap detection, EXPLAIN pre-flight. MIT licensed. pip install boyce.">
+  <meta property="og:title" content="Boyce &mdash; Semantic Protocol &amp; Safety Layer for Agentic SQL">
+  <meta property="og:description" content="Give AI agents structured database intelligence. Deterministic SQL compiler, NULL trap detection, EXPLAIN pre-flight. MIT licensed.">
+  <meta property="og:url" content="https://convergentmethods.com/boyce/">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Boyce",
+    "description": "Semantic protocol and safety layer for agentic database workflows. Deterministic SQL compiler with NULL trap detection and EXPLAIN pre-flight validation.",
+    "url": "https://convergentmethods.com/boyce/",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Cross-platform",
+    "programmingLanguage": "Python",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "Convergent Methods",
+      "url": "https://convergentmethods.com"
+    },
+    "license": "https://opensource.org/licenses/MIT",
+    "softwareRequirements": "Python 3.10+",
+    "downloadUrl": "https://pypi.org/project/boyce/",
+    "codeRepository": "https://github.com/boyce-io/boyce"
+  }
+  </script>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="/boyce/" class="nav-brand">Boyce</a>
+      <ul class="nav-links">
+        <li><a href="/">Convergent Methods</a></li>
+        <li><a href="https://github.com/boyce-io/boyce">GitHub</a></li>
+        <li><a href="https://pypi.org/project/boyce/">PyPI</a></li>
+        <li><a href="https://github.com/boyce-io/boyce#readme">Docs</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container-wide">
+
+    <!-- Hero -->
+    <div class="hero">
+      <h1>Boyce</h1>
+      <p class="tagline">Don't let your agents guess. Give them Eyes.</p>
+      <p class="explainer">Gives AI agents structured database intelligence to generate correct, safe SQL &mdash; deterministically.</p>
+      <div class="install-block">pip install boyce</div>
+      <div class="hero-links">
+        <a href="https://github.com/boyce-io/boyce">GitHub</a>
+        <a href="https://pypi.org/project/boyce/">PyPI</a>
+        <a href="https://github.com/boyce-io/boyce#readme">Docs</a>
+      </div>
+    </div>
+
+    <!-- The Problem -->
+    <section>
+      <h2>The Problem</h2>
+      <p>AI agents querying databases without context generate unreliable SQL. They work from incomplete schemas, guess join paths, and miss NULL distributions that silently corrupt results.</p>
+      <p>A naive equality filter on a column with 30% NULLs silently drops those rows &mdash; and the agent never knows. Your query returns confidently wrong numbers. At 2am. In production.</p>
+      <p><strong>Boyce gives agents structured database intelligence so this doesn't happen.</strong></p>
+    </section>
+
+    <!-- The Three Layers -->
+    <section>
+      <h2>What Boyce Does</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>What it does</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>&#x1F9E0; The Brain</strong></td>
+            <td>NL &rarr; StructuredFilter &rarr; deterministic SQL. Same inputs, same SQL, byte-for-byte, every time. Zero LLM in the SQL compiler.</td>
+          </tr>
+          <tr>
+            <td><strong>&#x1F441; The Eyes</strong></td>
+            <td>Live Postgres/Redshift adapter. Your agent sees real schema, real data distributions, real NULL rates before writing a single filter.</td>
+          </tr>
+          <tr>
+            <td><strong>&#x1F6E1; The Nervous System</strong></td>
+            <td>EXPLAIN pre-flight on every generated query. Bad SQL is caught at planning time &mdash; not at 2am in your on-call rotation.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- How It Works -->
+    <section>
+      <h2>How to Install</h2>
+
+      <pre><code class="language-bash">pip install boyce
+
+# With live Postgres/Redshift adapter
+pip install "boyce[postgres]"</code></pre>
+
+      <p>Then configure your MCP host. There are two paths:</p>
+
+      <div class="tabs">
+        <div class="tab-buttons">
+          <button class="tab-btn active" data-tab="mcp-host">MCP Hosts (no API key needed)</button>
+          <button class="tab-btn" data-tab="cli-http">CLI / HTTP / Non-MCP</button>
+        </div>
+
+        <div class="tab-content active" id="tab-mcp-host">
+          <p>If you use <strong>Claude Desktop, Cursor, Claude Code, Cline, or Windsurf</strong> &mdash; you do not need to configure an LLM provider. The host's model handles reasoning. Boyce supplies schema context and a deterministic SQL compiler via <code>get_schema</code> and <code>build_sql</code>.</p>
+
+          <p>Run the setup wizard:</p>
+          <pre><code class="language-bash">boyce-init</code></pre>
+
+          <p>Or configure manually:</p>
+          <pre><code class="language-json">{
+  "mcpServers": {
+    "boyce": {
+      "command": "boyce",
+      "env": {
+        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
+      }
+    }
+  }
+}</code></pre>
+          <p class="muted"><code>BOYCE_DB_URL</code> is optional. Without it, Boyce runs in schema-only mode &mdash; SQL generation still works; EXPLAIN pre-flight returns <code>"unchecked"</code>.</p>
+        </div>
+
+        <div class="tab-content" id="tab-cli-http">
+          <p>For the CLI (<code>boyce ask</code>), HTTP API, or VS Code extension, configure Boyce's internal query planner:</p>
+          <pre><code class="language-json">{
+  "mcpServers": {
+    "boyce": {
+      "command": "boyce",
+      "env": {
+        "BOYCE_PROVIDER": "anthropic",
+        "BOYCE_MODEL": "claude-sonnet-4-6",
+        "ANTHROPIC_API_KEY": "sk-ant-...",
+        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
+      }
+    }
+  }
+}</code></pre>
+          <p class="muted">Boyce uses <a href="https://docs.litellm.ai/docs/providers">LiteLLM</a> &mdash; supports Anthropic, OpenAI, Ollama (local), vLLM (local), Azure, Bedrock, Vertex, Mistral, and 100+ providers.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- MCP Tools -->
+    <section>
+      <h2>MCP Tools</h2>
+      <p>Eight tools exposed via the <a href="https://modelcontextprotocol.io">Model Context Protocol</a>:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Tool</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>ingest_source</code></td>
+            <td>Parse a SemanticSnapshot from dbt, LookML, DDL, SQLite, Django, SQLAlchemy, Prisma, CSV, or Parquet</td>
+          </tr>
+          <tr>
+            <td><code>get_schema</code></td>
+            <td>Return full schema context &mdash; host LLM uses this to construct queries without a Boyce API key</td>
+          </tr>
+          <tr>
+            <td><code>build_sql</code></td>
+            <td>Compile a StructuredFilter to SQL &mdash; deterministic, no LLM call</td>
+          </tr>
+          <tr>
+            <td><code>ask_boyce</code></td>
+            <td>Full NL &rarr; SQL pipeline with NULL trap detection and EXPLAIN pre-flight</td>
+          </tr>
+          <tr>
+            <td><code>query_database</code></td>
+            <td>Execute read-only SELECT against live database</td>
+          </tr>
+          <tr>
+            <td><code>profile_data</code></td>
+            <td>Null %, distinct count, min/max for any column</td>
+          </tr>
+          <tr>
+            <td><code>solve_path</code></td>
+            <td>Optimal join path between entities via Dijkstra</td>
+          </tr>
+          <tr>
+            <td><code>ingest_definition</code></td>
+            <td>Store certified business definitions &mdash; auto-injected at query time</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Parsers -->
+    <section>
+      <h2>What It Parses</h2>
+      <p>Point Boyce at your project. It figures out what you have.</p>
+      <pre><code class="language-bash">boyce-scan ./my-project/</code></pre>
+      <div class="parser-grid">
+        <span class="parser-tag">dbt manifest</span>
+        <span class="parser-tag">dbt project</span>
+        <span class="parser-tag">LookML</span>
+        <span class="parser-tag">Raw DDL</span>
+        <span class="parser-tag">SQLite</span>
+        <span class="parser-tag">Django</span>
+        <span class="parser-tag">SQLAlchemy</span>
+        <span class="parser-tag">Prisma</span>
+        <span class="parser-tag">CSV</span>
+        <span class="parser-tag">Parquet</span>
+      </div>
+    </section>
+
+    <!-- Architecture -->
+    <section>
+      <h2>Architecture</h2>
+      <pre><code>SemanticSnapshot (JSON)
+        |
+        v  ingest_source
+  +-----------------------------------+
+  |     SemanticGraph (NetworkX)      |
+  |  entities -> weighted joins       |
+  +-----------------------------------+
+        |                    |
+        v  ask_boyce         v  solve_path
+   QueryPlanner          Dijkstra
+   (LiteLLM)             join resolver
+        |                    |
+        +--------+-----------+
+                 v
+        kernel.process_request()    &lt;- ZERO LLM
+        SQLBuilder (dialect-aware)
+                 |
+                 v
+        EXPLAIN pre-flight          &lt;- safety layer
+                 |
+                 v
+         SQL + validation result</code></pre>
+      <p class="muted">Dialect support: Redshift, Postgres, DuckDB, BigQuery</p>
+    </section>
+
+    <!-- Quick Start -->
+    <section>
+      <h2>Quick Start</h2>
+      <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
+        <li style="margin-bottom: 0.75rem;">Install: <code>pip install boyce</code></li>
+        <li style="margin-bottom: 0.75rem;">Configure: <code>boyce-init</code> <span class="muted">(auto-detects your MCP host)</span></li>
+        <li style="margin-bottom: 0.75rem;">Scan: <code>boyce-scan ./my-project/</code></li>
+        <li style="margin-bottom: 0.75rem;">Ask: <code>boyce ask "total revenue by customer segment"</code></li>
+      </ol>
+      <div class="text-center mt-3">
+        <div class="install-block">pip install boyce</div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="https://github.com/boyce-io/boyce">GitHub</a>
+        <a href="https://pypi.org/project/boyce/">PyPI</a>
+        <a href="https://github.com/boyce-io/boyce/blob/main/docs/troubleshooting.md">Troubleshooting</a>
+        <a href="llms.txt">Agent-readable docs: llms.txt</a>
+      </div>
+      <p>Named for <a href="https://en.wikipedia.org/wiki/Raymond_F._Boyce">Raymond F. Boyce</a>, co-inventor of SQL (1974).</p>
+      <p>Built by <a href="/">Convergent Methods</a> &middot; MIT License &middot; &copy; 2026</p>
+    </div>
+  </footer>
+
+  <!-- Prism.js syntax highlighting -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+
+  <!-- Tab switching -->
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var tabId = this.getAttribute('data-tab');
+        var tabs = this.closest('.tabs');
+        tabs.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+        tabs.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+        this.classList.add('active');
+        tabs.querySelector('#tab-' + tabId).classList.add('active');
+      });
+    });
+  </script>
+
+</body>
+</html>

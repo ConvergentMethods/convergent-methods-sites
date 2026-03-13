@@ -1,0 +1,16 @@
+# Convergent Methods
+
+> AI-native developer tools. Open-source. MIT licensed.
+
+Convergent Methods builds tools that give AI agents structured access to enterprise data infrastructure. Our flagship product is Boyce.
+
+## Products
+
+- [Boyce](https://convergentmethods.com/boyce/): Semantic protocol and safety layer for agentic database workflows. Deterministic SQL compiler, NULL trap detection, EXPLAIN pre-flight validation.
+- [Boyce llms.txt](https://convergentmethods.com/boyce/llms.txt): Agent-optimized documentation for Boyce
+- [Boyce Full Docs](https://convergentmethods.com/boyce/llms-full.txt): Complete agent-readable reference
+
+## Links
+
+- [GitHub](https://github.com/ConvergentMethods)
+- [PyPI](https://pypi.org/project/boyce/)

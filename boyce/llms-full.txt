@@ -1,0 +1,288 @@
+# Boyce — Complete Agent Reference
+
+Version: 0.1.0
+
+Boyce is a semantic protocol and safety layer for agentic database workflows. It gives AI agents structured database intelligence to generate correct, safe SQL — deterministically.
+
+Boyce is an MCP server (Model Context Protocol) exposing 8 tools. The SQL compiler uses zero LLM calls. Same inputs produce identical SQL, byte-for-byte, every time. MIT licensed. Python 3.10+.
+
+## Install
+
+```
+pip install boyce
+pip install "boyce[postgres]"    # adds asyncpg for live DB adapter
+```
+
+## First Run
+
+After install, run `boyce-init` to auto-detect your MCP host and write the mcpServers config. Supported hosts: Claude Desktop, Cursor, Claude Code, Cline, Windsurf. For manual config see Path 1 below.
+
+To verify Boyce is running after MCP config: call `get_schema` — if it returns an empty snapshot list, Boyce is alive but no sources have been ingested yet. Call `ingest_source` with a `source_path` to load your first schema.
+
+## MCP Configuration
+
+### Path 1: MCP Hosts (Claude Desktop, Cursor, Claude Code, Cline, Windsurf)
+
+No Boyce API key needed. The host LLM calls `get_schema` to read the database schema, constructs a `StructuredFilter`, and passes it to `build_sql`. Boyce compiles deterministic SQL with zero LLM calls.
+
+Setup wizard: `boyce-init` (auto-detects host and writes config)
+
+Manual config:
+```json
+{
+  "mcpServers": {
+    "boyce": {
+      "command": "boyce",
+      "env": {
+        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
+      }
+    }
+  }
+}
+```
+
+BOYCE_DB_URL is optional. Without it, SQL generation works but EXPLAIN pre-flight returns "unchecked".
+
+### Path 2: CLI / HTTP API / Non-MCP
+
+Requires LLM provider config for Boyce's internal query planner:
+
+```json
+{
+  "mcpServers": {
+    "boyce": {
+      "command": "boyce",
+      "env": {
+        "BOYCE_PROVIDER": "anthropic",
+        "BOYCE_MODEL": "claude-sonnet-4-6",
+        "ANTHROPIC_API_KEY": "sk-ant-...",
+        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
+      }
+    }
+  }
+}
+```
+
+Uses LiteLLM — supports Anthropic, OpenAI, Ollama (local), vLLM (local), Azure, Bedrock, Vertex, Mistral, and 100+ providers.
+
+### CLI Entry Points
+
+- `boyce` (no args): Start MCP server on stdio
+- `boyce ask "..."`: NL → SQL, output to stdout
+- `boyce chat "..."`: Conversational mode with intent routing
+- `boyce serve --http [--port 8741]`: HTTP API mode (Starlette + Bearer auth)
+- `boyce-init`: Setup wizard for MCP host configuration
+- `boyce-scan <path>`: Scan directory, auto-detect sources, output JSON report
+
+## Environment Variables
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| BOYCE_DB_URL | Optional | asyncpg DSN — enables EXPLAIN pre-flight + live query tools |
+| BOYCE_PROVIDER | Path 2 only | LiteLLM provider name (e.g. "anthropic", "openai") |
+| BOYCE_MODEL | Path 2 only | Model ID passed to LiteLLM |
+| ANTHROPIC_API_KEY | When using Anthropic | API key |
+| OPENAI_API_KEY | When using OpenAI | API key |
+| BOYCE_HTTP_TOKEN | HTTP API only | Bearer token for `boyce serve --http` |
+| BOYCE_STATEMENT_TIMEOUT_MS | Optional | Per-statement timeout in ms (default: 30000) |
+
+## MCP Tools — Complete Reference
+
+Note: All tools work without LLM provider config except `ask_boyce`, which requires `BOYCE_PROVIDER` + `BOYCE_MODEL`. Tools that require a live database connection (`query_database`, `profile_data`) also require `BOYCE_DB_URL` + asyncpg installed.
+
+### ingest_source
+
+Parse and ingest a SemanticSnapshot from a file path or pre-built JSON dict.
+
+Parameters:
+- `source_path` (string, optional): Path to dbt manifest.json, dbt project directory, LookML .lkml file, SQLite .db file, DDL .sql file, Django models.py, SQLAlchemy models, Prisma .prisma file, CSV, or Parquet. Auto-detects source type.
+- `snapshot_json` (dict, optional): A pre-built SemanticSnapshot dict conforming to the schema. Must include a valid snapshot_id (SHA-256).
+- `snapshot_name` (string, default "default"): Logical name for storage/retrieval.
+
+Provide exactly one of source_path or snapshot_json.
+
+Returns: `{snapshot_id, snapshot_name, entities_count, fields_count, joins_count, source_type}`
+
+### ingest_definition
+
+Store a certified business definition. Automatically injected into planner context at query time.
+
+Parameters:
+- `term` (string, required): Business term to define (e.g. "revenue", "active user", "churn rate"). Case-insensitive matching.
+- `definition` (string, required): Plain-language definition including exact business logic, edge cases, inclusions/exclusions.
+- `sql_expression` (string, optional): SQL expression implementing this definition. Use column names from the schema.
+- `entity_hint` (string, optional): Table name this definition applies to.
+- `snapshot_name` (string, default "default"): Which snapshot these definitions apply to.
+
+Returns: `{term, snapshot_name, definitions_count}`
+
+### get_schema
+
+Return full schema context + StructuredFilter documentation. Designed for MCP hosts whose LLM reads the schema and constructs queries directly.
+
+Parameters:
+- `snapshot_name` (string, default "default"): Previously ingested snapshot name.
+
+Returns: `{snapshot_id, snapshot_name, entities, joins, definitions, structured_filter_docs}`
+
+The `entities` array contains full field details: field_id, name, field_type, data_type, nullable, primary_key, description, valid_values.
+The `joins` array contains: join_id, source_entity_id, target_entity_id, join_type, source_field_id, target_field_id, weight, description.
+
+### build_sql
+
+Compile a StructuredFilter to SQL. Deterministic — no LLM call inside Boyce.
+
+Parameters:
+- `structured_filter` (dict, required): A StructuredFilter dict. All entity_id and field_id values must exist in the snapshot.
+- `snapshot_name` (string, default "default"): Previously ingested snapshot name.
+- `dialect` (string, default "redshift"): Target SQL dialect. Supported: "redshift", "postgres", "duckdb", "bigquery".
+
+Pipeline: validate filter → kernel.process_request() → NULL trap check → EXPLAIN pre-flight → Redshift lint → audit.
+
+Returns: `{sql, snapshot_id, snapshot_name, entities_resolved, validation, compat_risks, warning, null_trap_warnings}`
+
+### ask_boyce
+
+Full NL → SQL pipeline. Requires BOYCE_PROVIDER + BOYCE_MODEL env vars.
+
+Parameters:
+- `natural_language_query` (string, required): Free-form question (e.g. "revenue by product last 12 months").
+- `snapshot_name` (string, default "default"): Previously ingested snapshot.
+- `dialect` (string, default "redshift"): Target SQL dialect.
+
+Pipeline: QueryPlanner (LiteLLM) → StructuredFilter → kernel.process_request() → NULL trap check → EXPLAIN pre-flight → Redshift lint → audit.
+
+Returns: `{sql, snapshot_id, snapshot_name, entities_resolved, validation, compat_risks, warning, null_trap_warnings}`
+
+validation object: `{status: "verified"|"invalid"|"unchecked", error: string|null, cost_estimate: number|null}`
+
+NULL trap warning (when detected): `{code: "NULL_TRAP", severity: "HIGH", message: string}`
+null_trap_warnings array: `[{table, column, null_pct, null_count, row_count, filter_operator, filter_value, risk}]`
+
+### query_database
+
+Execute a read-only SELECT against the live database.
+
+Parameters:
+- `sql` (string, required): A SELECT statement. Write operations (INSERT, UPDATE, DELETE, DDL) are rejected at two levels: pre-check keyword filter + readonly transaction.
+- `reason` (string, required): Brief explanation of why this query is needed. Logged for auditability.
+
+Returns: `{rows: [...], row_count: N, reason: string}`
+
+Requires: BOYCE_DB_URL env var + asyncpg installed.
+
+### profile_data
+
+Analyze a column in the live database. Returns null count, distinct count, min/max.
+
+Parameters:
+- `table` (string, required): Table name. Bare (e.g. "orders") or schema-qualified (e.g. "public.orders"). Only alphanumeric, underscores, dots allowed.
+- `column` (string, required): Column name (same character restrictions).
+
+Returns: `{table, column, row_count, null_count, null_pct, distinct_count, min_value, max_value}`
+
+Requires: BOYCE_DB_URL env var + asyncpg installed.
+
+### solve_path
+
+Find the optimal join path between two entities via Dijkstra.
+
+Parameters:
+- `source` (string, required): Source entity ID or bare name (e.g. "orders" or "entity:orders").
+- `target` (string, required): Target entity ID or bare name.
+- `snapshot_name` (string, optional): Load this snapshot into graph first.
+
+Returns: `{source_entity, target_entity, path_length, semantic_cost, joins, sql}`
+
+## StructuredFilter Format
+
+The JSON contract between intent and SQL generation. Construct this from `get_schema` output and pass to `build_sql`.
+
+```json
+{
+  "concept_map": {
+    "entities": [{"entity_id": "entity:orders", "entity_name": "orders"}],
+    "fields": [{"field_id": "field:orders:revenue", "field_name": "revenue", "entity_id": "entity:orders"}],
+    "metrics": [{"metric_name": "revenue", "field_id": "field:orders:revenue", "aggregation_type": "SUM"}],
+    "dimensions": [{"field_id": "field:orders:status", "field_name": "status", "entity_id": "entity:orders"}],
+    "filters": [{"field_id": "field:orders:status", "operator": "=", "value": "active", "entity_id": "entity:orders"}]
+  },
+  "join_path": ["entity:orders", "entity:customers"],
+  "grain_context": {"aggregation_required": true, "grouping_fields": ["field:orders:status"]},
+  "policy_context": {"resolved_predicates": []},
+  "temporal_filters": [{"field_id": "field:orders:created_at", "operator": "trailing_interval", "value": {"value": 12, "unit": "month"}}],
+  "dialect": "redshift"
+}
+```
+
+### Filter Operators
+- Equality: =, !=
+- Comparison: >, >=, <, <=
+- Set: IN, NOT IN (value is a list)
+- Pattern: LIKE, ILIKE
+- Null: IS NULL, IS NOT NULL (value is null)
+
+### Temporal Operators
+- trailing_interval: {"value": N, "unit": "day|week|month|quarter|year"}
+- leading_interval: {"value": N, "unit": "..."}
+- between: {"start": "YYYY-MM-DD", "end": "YYYY-MM-DD"}
+- on_or_after: "YYYY-MM-DD"
+- on_or_before: "YYYY-MM-DD"
+- equals: "YYYY-MM-DD"
+
+### Aggregation Types
+SUM, COUNT, COUNT_DISTINCT, AVG, MIN, MAX
+
+### Rules
+1. Every entity_id and field_id must exist in the snapshot returned by get_schema.
+2. Metrics require grain_context.aggregation_required = true.
+3. join_path is optional — Boyce resolves joins via Dijkstra if omitted.
+4. dialect defaults to "redshift". Supported: "redshift", "postgres", "duckdb", "bigquery".
+
+## Supported Source Parsers
+
+| Parser | Detects | Source |
+|--------|---------|--------|
+| dbt_manifest | manifest.json | dbt build artifact |
+| dbt_project | dbt_project.yml + schema YAML | dbt project directory |
+| lookml | *.lkml files | Looker/LookML |
+| ddl | CREATE TABLE statements | Raw .sql files |
+| sqlite | *.db, *.sqlite files | SQLite databases |
+| django | models.py with django imports | Django ORM |
+| sqlalchemy | models with Column/Table | SQLAlchemy ORM |
+| prisma | schema.prisma | Prisma (Node/TypeScript) |
+| csv | *.csv files | CSV headers → fields |
+| parquet | *.parquet files | Parquet schema → fields |
+
+Auto-detection: `boyce-scan ./path/` walks the directory tree and detects all parseable sources.
+
+## Supported SQL Dialects
+
+| Dialect | Notes |
+|---------|-------|
+| redshift | Default. Redshift 1.0 (PG 8.0.2 base). Safety linting for LATERAL, JSONB, REGEXP, numeric casts. Uses GETDATE(), ||, PERCENT_RANK(). |
+| postgres | Standard PostgreSQL |
+| duckdb | DuckDB analytical SQL |
+| bigquery | Google BigQuery |
+
+## Architecture
+
+- SemanticGraph: In-memory NetworkX MultiDiGraph. Entities are nodes, joins are weighted edges.
+- Join weights: 0.1 (explicit dbt/LookML), 0.5 (dbt source YAML), 1.0 (foreign key), 2.0 (inferred name-match), 100.0 (many-to-many avoid).
+- Snapshot persistence: JSON files in `_local_context/` directory. Survives restarts.
+- Audit: Append-only JSONL log of all queries.
+
+## Known Limitations
+
+- process_request() takes a single snapshot — multi-snapshot merge not yet implemented
+- PostgresAdapter supports asyncpg only (Postgres/Redshift) — no BigQuery or DuckDB live adapter
+- SemanticGraph is in-memory; rebuilt from persisted snapshots on server start
+- QueryPlanner (ask_boyce) requires LLM provider config; build_sql does not
+
+## Links
+
+- GitHub: https://github.com/boyce-io/boyce
+- PyPI: https://pypi.org/project/boyce/
+- Troubleshooting: https://github.com/boyce-io/boyce/blob/main/docs/troubleshooting.md
+- Human page: https://convergentmethods.com/boyce/
+- Organization: https://convergentmethods.com
