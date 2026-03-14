@@ -45,5 +45,6 @@ Redshift, Postgres, DuckDB, BigQuery (dialect-aware SQL generation)
 ## Detailed Reference
 
 - [Full agent docs](https://convergentmethods.com/boyce/llms-full.txt): Complete tool reference with parameters
+- [The Null Trap](https://convergentmethods.com/boyce/null-trap/): Why NULL distributions silently corrupt agentic SQL — and why the fix isn't a better model
 - [GitHub](https://github.com/boyce-io/boyce)
 - [PyPI](https://pypi.org/project/boyce/)

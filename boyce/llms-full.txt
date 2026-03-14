@@ -285,4 +285,5 @@ Auto-detection: `boyce-scan ./path/` walks the directory tree and detects all pa
 - PyPI: https://pypi.org/project/boyce/
 - Troubleshooting: https://github.com/boyce-io/boyce/blob/main/docs/troubleshooting.md
 - Human page: https://convergentmethods.com/boyce/
+- The Null Trap (essay): https://convergentmethods.com/boyce/null-trap/ — why NULL distributions silently corrupt agentic SQL queries
 - Organization: https://convergentmethods.com
