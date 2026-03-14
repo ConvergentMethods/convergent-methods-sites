@@ -72,7 +72,7 @@
       <h2>The Problem</h2>
       <p>AI agents querying databases without context generate unreliable SQL. They work from incomplete schemas, guess join paths, and miss NULL distributions that silently corrupt results.</p>
       <p>A naive equality filter on a column with 30% NULLs silently drops those rows &mdash; and the agent never knows. Your query returns confidently wrong numbers. At 2am. In production.</p>
-      <p><strong>Boyce gives agents structured database intelligence so this doesn't happen.</strong></p>
+      <p><strong>Boyce gives agents structured database intelligence so this doesn't happen.</strong> <a href="null-trap/">Read: The Null Trap &rarr;</a></p>
     </section>
 
     <!-- The Three Layers -->
@@ -100,6 +100,17 @@
           </tr>
         </tbody>
       </table>
+    </section>
+
+    <!-- Quick Start -->
+    <section>
+      <h2>Quick Start</h2>
+      <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
+        <li style="margin-bottom: 0.75rem;">Install: <code>pip install boyce</code></li>
+        <li style="margin-bottom: 0.75rem;">Configure: <code>boyce-init</code> <span class="muted">(auto-detects your MCP host)</span></li>
+        <li style="margin-bottom: 0.75rem;">Scan: <code>boyce-scan ./my-project/</code></li>
+        <li style="margin-bottom: 0.75rem;">Ask: <code>boyce ask "total revenue by customer segment"</code></li>
+      </ol>
     </section>
 
     <!-- How It Works -->
@@ -252,20 +263,6 @@ pip install "boyce[postgres]"</code></pre>
                  v
          SQL + validation result</code></pre>
       <p class="muted">Dialect support: Redshift, Postgres, DuckDB, BigQuery</p>
-    </section>
-
-    <!-- Quick Start -->
-    <section>
-      <h2>Quick Start</h2>
-      <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
-        <li style="margin-bottom: 0.75rem;">Install: <code>pip install boyce</code></li>
-        <li style="margin-bottom: 0.75rem;">Configure: <code>boyce-init</code> <span class="muted">(auto-detects your MCP host)</span></li>
-        <li style="margin-bottom: 0.75rem;">Scan: <code>boyce-scan ./my-project/</code></li>
-        <li style="margin-bottom: 0.75rem;">Ask: <code>boyce ask "total revenue by customer segment"</code></li>
-      </ol>
-      <div class="text-center mt-3">
-        <div class="install-block">pip install boyce</div>
-      </div>
     </section>
 
   </main>
