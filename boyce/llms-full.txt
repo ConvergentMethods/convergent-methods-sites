@@ -88,7 +88,7 @@ Uses LiteLLM — supports Anthropic, OpenAI, Ollama (local), vLLM (local), Azure
 
 ## MCP Tools — Complete Reference
 
-Note: All tools work without LLM provider config except `ask_boyce`, which requires `BOYCE_PROVIDER` + `BOYCE_MODEL`. Tools that require a live database connection (`query_database`, `profile_data`) also require `BOYCE_DB_URL` + asyncpg installed.
+7 tools total. All work without LLM provider config except `ask_boyce` Mode B/C, which requires `BOYCE_PROVIDER` + `BOYCE_MODEL`. MCP host path (Mode A): host LLM calls `get_schema` → constructs StructuredFilter → calls `ask_boyce` with no Boyce credentials needed. Tools that require a live database connection (`query_database`, `profile_data`, `validate_sql` EXPLAIN) also require `BOYCE_DB_URL` + asyncpg installed.
 
 ### ingest_source
 
@@ -128,29 +128,22 @@ Returns: `{snapshot_id, snapshot_name, entities, joins, definitions, structured_
 The `entities` array contains full field details: field_id, name, field_type, data_type, nullable, primary_key, description, valid_values.
 The `joins` array contains: join_id, source_entity_id, target_entity_id, join_type, source_field_id, target_field_id, weight, description.
 
-### build_sql
-
-Compile a StructuredFilter to SQL. Deterministic — no LLM call inside Boyce.
-
-Parameters:
-- `structured_filter` (dict, required): A StructuredFilter dict. All entity_id and field_id values must exist in the snapshot.
-- `snapshot_name` (string, default "default"): Previously ingested snapshot name.
-- `dialect` (string, default "redshift"): Target SQL dialect. Supported: "redshift", "postgres", "duckdb", "bigquery".
-
-Pipeline: validate filter → kernel.process_request() → NULL trap check → EXPLAIN pre-flight → Redshift lint → audit.
-
-Returns: `{sql, snapshot_id, snapshot_name, entities_resolved, validation, compat_risks, warning, null_trap_warnings}`
-
 ### ask_boyce
 
-Full NL → SQL pipeline. Requires BOYCE_PROVIDER + BOYCE_MODEL env vars.
+Tri-modal NL→SQL pipeline. Mode A requires no credentials (host LLM provides StructuredFilter). Mode B requires BOYCE_PROVIDER + BOYCE_MODEL.
 
 Parameters:
-- `natural_language_query` (string, required): Free-form question (e.g. "revenue by product last 12 months").
+- `natural_language_query` (string, optional): Free-form question. Required for Mode B/C. Omit for Mode A.
+- `structured_filter` (dict, optional): Pre-built StructuredFilter from `get_schema`. Triggers Mode A (deterministic, zero credentials).
 - `snapshot_name` (string, default "default"): Previously ingested snapshot.
 - `dialect` (string, default "redshift"): Target SQL dialect.
 
-Pipeline: QueryPlanner (LiteLLM) → StructuredFilter → kernel.process_request() → NULL trap check → EXPLAIN pre-flight → Redshift lint → audit.
+Modes:
+- Mode A: `structured_filter` provided → deterministic pipeline, zero LLM calls inside Boyce
+- Mode B: `natural_language_query` + BOYCE_PROVIDER configured → QueryPlanner (LiteLLM) → kernel
+- Mode C: `natural_language_query` + no credentials → returns schema guidance for host LLM to construct filter
+
+Pipeline (Mode A/B): StructuredFilter → kernel.process_request() → NULL trap check → EXPLAIN pre-flight → Redshift lint → audit.
 
 Returns: `{sql, snapshot_id, snapshot_name, entities_resolved, validation, compat_risks, warning, null_trap_warnings}`
 
@@ -158,6 +151,22 @@ validation object: `{status: "verified"|"invalid"|"unchecked", error: string|nul
 
 NULL trap warning (when detected): `{code: "NULL_TRAP", severity: "HIGH", message: string}`
 null_trap_warnings array: `[{table, column, null_pct, null_count, row_count, filter_operator, filter_value, risk}]`
+
+### validate_sql
+
+Validate a hand-written SQL query through Boyce's safety layer without executing it. Use when you've written SQL directly (not via StructuredFilter) and want to check it first.
+
+Parameters:
+- `sql` (string, required): A SELECT statement to validate.
+- `snapshot_name` (string, default "default"): Previously ingested snapshot (used for NULL risk analysis against WHERE clause columns).
+- `dialect` (string, default "redshift"): Target SQL dialect for compatibility linting.
+
+Returns: `{sql, validation, compat_risks, null_risk_columns}`
+- `validation`: `{status: "verified"|"invalid"|"unchecked", error: string|null, cost_estimate: number|null}`
+- `compat_risks`: list of Redshift compatibility warnings
+- `null_risk_columns`: list of columns in WHERE equality filters with high NULL rates
+
+Does NOT execute the query. Use `query_database` to run after validation.
 
 ### query_database
 
@@ -182,17 +191,6 @@ Parameters:
 Returns: `{table, column, row_count, null_count, null_pct, distinct_count, min_value, max_value}`
 
 Requires: BOYCE_DB_URL env var + asyncpg installed.
-
-### solve_path
-
-Find the optimal join path between two entities via Dijkstra.
-
-Parameters:
-- `source` (string, required): Source entity ID or bare name (e.g. "orders" or "entity:orders").
-- `target` (string, required): Target entity ID or bare name.
-- `snapshot_name` (string, optional): Load this snapshot into graph first.
-
-Returns: `{source_entity, target_entity, path_length, semantic_cost, joins, sql}`
 
 ## StructuredFilter Format
 

@@ -2,7 +2,7 @@
 
 > Semantic protocol and safety layer for agentic database workflows.
 
-Boyce gives AI agents structured database intelligence to generate correct, safe SQL — deterministically. It is an MCP server exposing 8 tools. The SQL compiler uses zero LLM calls — same inputs produce identical SQL, byte-for-byte, every time.
+Boyce gives AI agents structured database intelligence to generate correct, safe SQL — deterministically. It is an MCP server exposing 7 tools. The SQL compiler uses zero LLM calls — same inputs produce identical SQL, byte-for-byte, every time.
 
 ## Install
 
@@ -16,18 +16,17 @@ Run `boyce-init` to auto-detect your MCP host (Claude Desktop, Cursor, Claude Co
 
 Add boyce to your mcpServers config: command is `boyce`, env var `BOYCE_DB_URL` is your PostgreSQL DSN (optional — omit for schema-only mode; EXPLAIN pre-flight returns `"unchecked"` without it).
 
-MCP hosts (Claude Desktop, Cursor, etc.) do not need a Boyce API key. The host LLM calls `get_schema` and `build_sql` directly. Only `ask_boyce` requires `BOYCE_PROVIDER` + `BOYCE_MODEL`.
+MCP hosts (Claude Desktop, Cursor, etc.) do not need a Boyce API key. The host LLM calls `get_schema` to read the schema, constructs a StructuredFilter, and calls `ask_boyce` (Mode A). Only `ask_boyce` Mode B/C requires `BOYCE_PROVIDER` + `BOYCE_MODEL`.
 
 ## MCP Tools
 
 - `ingest_source`: Parse SemanticSnapshot from dbt, LookML, DDL, SQLite, Django, SQLAlchemy, Prisma, CSV, Parquet
-- `get_schema`: Return full schema context for host LLM reasoning
-- `build_sql`: Compile StructuredFilter to SQL (deterministic, no LLM)
-- `ask_boyce`: Full NL → SQL with NULL trap detection + EXPLAIN pre-flight
+- `ingest_definition`: Store certified business definitions (auto-injected at query time)
+- `get_schema`: Return full schema context + StructuredFilter docs for host LLM reasoning
+- `ask_boyce`: Tri-modal NL→SQL with NULL trap detection + EXPLAIN pre-flight (Mode A: StructuredFilter, Mode B: NL+credentials, Mode C: NL fallback)
+- `validate_sql`: Validate hand-written SQL — EXPLAIN pre-flight, Redshift lint, NULL risk check — without executing
 - `query_database`: Read-only SELECT execution
 - `profile_data`: Column profiling (null %, distinct count, min/max)
-- `solve_path`: Dijkstra join-path resolution between entities
-- `ingest_definition`: Store certified business definitions
 
 ## Supported Databases
 
@@ -38,7 +37,7 @@ Redshift, Postgres, DuckDB, BigQuery (dialect-aware SQL generation)
 - Python 3.10+ required
 - MIT licensed
 - Uses LiteLLM for NL→SQL (supports Anthropic, OpenAI, Ollama, 100+ providers)
-- MCP hosts do NOT need an API key — host LLM calls get_schema + build_sql directly
+- MCP hosts do NOT need an API key — host LLM calls get_schema + ask_boyce (Mode A) directly
 - 10 source parsers with auto-detection via `boyce-scan`
 - Setup wizard: `boyce-init` (detects Claude Desktop, Cursor, Claude Code)
 

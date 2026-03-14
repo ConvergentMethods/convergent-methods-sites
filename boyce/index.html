@@ -176,7 +176,7 @@ pip install "boyce[postgres]"</code></pre>
     <!-- MCP Tools -->
     <section>
       <h2>MCP Tools</h2>
-      <p>Eight tools exposed via the <a href="https://modelcontextprotocol.io">Model Context Protocol</a>:</p>
+      <p>Seven tools exposed via the <a href="https://modelcontextprotocol.io">Model Context Protocol</a>:</p>
       <table>
         <thead>
           <tr>
@@ -190,16 +190,20 @@ pip install "boyce[postgres]"</code></pre>
             <td>Parse a SemanticSnapshot from dbt, LookML, DDL, SQLite, Django, SQLAlchemy, Prisma, CSV, or Parquet</td>
           </tr>
           <tr>
+            <td><code>ingest_definition</code></td>
+            <td>Store certified business definitions &mdash; auto-injected at query time</td>
+          </tr>
+          <tr>
             <td><code>get_schema</code></td>
             <td>Return full schema context &mdash; host LLM uses this to construct queries without a Boyce API key</td>
           </tr>
           <tr>
-            <td><code>build_sql</code></td>
-            <td>Compile a StructuredFilter to SQL &mdash; deterministic, no LLM call</td>
-          </tr>
-          <tr>
             <td><code>ask_boyce</code></td>
             <td>Full NL &rarr; SQL pipeline with NULL trap detection and EXPLAIN pre-flight</td>
+          </tr>
+          <tr>
+            <td><code>validate_sql</code></td>
+            <td>Validate hand-written SQL &mdash; EXPLAIN pre-flight, Redshift lint, NULL risk check &mdash; without executing</td>
           </tr>
           <tr>
             <td><code>query_database</code></td>
@@ -208,14 +212,6 @@ pip install "boyce[postgres]"</code></pre>
           <tr>
             <td><code>profile_data</code></td>
             <td>Null %, distinct count, min/max for any column</td>
-          </tr>
-          <tr>
-            <td><code>solve_path</code></td>
-            <td>Optimal join path between entities via Dijkstra</td>
-          </tr>
-          <tr>
-            <td><code>ingest_definition</code></td>
-            <td>Store certified business definitions &mdash; auto-injected at query time</td>
           </tr>
         </tbody>
       </table>

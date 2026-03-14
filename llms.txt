@@ -10,6 +10,10 @@ Convergent Methods builds tools that give AI agents structured access to enterpr
 - [Boyce llms.txt](https://convergentmethods.com/boyce/llms.txt): Agent-optimized documentation for Boyce
 - [Boyce Full Docs](https://convergentmethods.com/boyce/llms-full.txt): Complete agent-readable reference
 
+## Resources
+
+- [The Null Trap](https://convergentmethods.com/boyce/null-trap/): Why NULL distributions silently corrupt agentic SQL — and why the fix isn't a better model
+
 ## Links
 
 - [GitHub](https://github.com/ConvergentMethods)
