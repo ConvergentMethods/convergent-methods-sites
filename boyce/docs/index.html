@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boyce Integration Guides &mdash; Claude Desktop, Cursor, Claude Code, Cline</title>
+  <meta name="description" content="Connect Boyce to Claude Desktop, Cursor, Claude Code, Cline, or Continue.dev in minutes. No API key required for MCP hosts.">
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="/boyce/" class="nav-brand">Boyce</a>
+      <ul class="nav-links">
+        <li><a href="/boyce/">Product</a></li>
+        <li><a href="https://github.com/boyce-io/boyce">GitHub</a></li>
+        <li><a href="https://pypi.org/project/boyce/">PyPI</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container-wide">
+
+    <div class="hero" style="padding-bottom: 2rem;">
+      <h1>Integration Guides</h1>
+      <p class="tagline">Connect Boyce to your MCP host in minutes.</p>
+      <p class="explainer">MCP hosts &mdash; Claude Desktop, Cursor, Claude Code, Cline, Continue.dev &mdash; do not need a Boyce API key. The host&rsquo;s own model handles reasoning. Boyce supplies schema context and deterministic SQL.</p>
+    </div>
+
+    <!-- Install first -->
+    <section>
+      <h2>Step 1 &mdash; Install</h2>
+      <pre><code class="language-bash">pip install boyce
+
+# With live Postgres/Redshift adapter (enables EXPLAIN pre-flight + column profiling)
+pip install "boyce[postgres]"</code></pre>
+      <p>Then run the setup wizard &mdash; it auto-detects your MCP host and writes the config:</p>
+      <pre><code class="language-bash">boyce-init</code></pre>
+      <p class="muted">Supports: Claude Desktop, Cursor, Claude Code, VS Code, JetBrains, Windsurf. Or configure manually below.</p>
+    </section>
+
+    <!-- Host guides -->
+    <section>
+      <h2>Step 2 &mdash; Configure Your Host</h2>
+
+      <div class="tabs">
+        <div class="tab-buttons">
+          <button class="tab-btn active" data-tab="claude-desktop">Claude Desktop</button>
+          <button class="tab-btn" data-tab="cursor">Cursor</button>
+          <button class="tab-btn" data-tab="claude-code">Claude Code</button>
+          <button class="tab-btn" data-tab="cline">Cline</button>
+          <button class="tab-btn" data-tab="continue">Continue.dev</button>
+        </div>
+
+        <!-- Claude Desktop -->
+        <div class="tab-content active" id="tab-claude-desktop">
+          <p><strong>Config file:</strong> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
+          <pre><code class="language-json">{
+  "mcpServers": {
+    "boyce": {
+      "command": "boyce",
+      "env": {
+        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
+      }
+    }
+  }
+}</code></pre>
+          <p class="muted"><code>BOYCE_DB_URL</code> is optional. Without it, SQL generation works; EXPLAIN pre-flight returns <code>"unchecked"</code>.</p>
+          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
+            <li style="margin-bottom: 0.5rem;">Edit the config file (create if it doesn&rsquo;t exist)</li>
+            <li style="margin-bottom: 0.5rem;">Restart Claude Desktop</li>
+            <li style="margin-bottom: 0.5rem;">Look for the tools icon (hammer) in the chat input &mdash; Boyce tools should appear</li>
+            <li style="margin-bottom: 0.5rem;">Test: <em>&ldquo;Call ingest_source on my schema file, then get_schema to show me what&rsquo;s available.&rdquo;</em></li>
+          </ol>
+        </div>
+
+        <!-- Cursor -->
+        <div class="tab-content" id="tab-cursor">
+          <p><strong>Config file:</strong> <code>.cursor/mcp.json</code> in your project root (or <code>~/.cursor/mcp.json</code> for global)</p>
+          <pre><code class="language-json">{
+  "mcpServers": {
+    "boyce": {
+      "command": "boyce",
+      "env": {
+        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
+      }
+    }
+  }
+}</code></pre>
+          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
+            <li style="margin-bottom: 0.5rem;">Create <code>.cursor/mcp.json</code> in your project (or run <code>boyce-init</code>)</li>
+            <li style="margin-bottom: 0.5rem;">Reload Cursor: <kbd>Cmd+Shift+P</kbd> &rarr; <em>Developer: Reload Window</em></li>
+            <li style="margin-bottom: 0.5rem;">Open Cursor chat (<kbd>Cmd+L</kbd>) and test: <em>&ldquo;Use boyce get_schema to list available entities.&rdquo;</em></li>
+          </ol>
+        </div>
+
+        <!-- Claude Code -->
+        <div class="tab-content" id="tab-claude-code">
+          <p><strong>Config file:</strong> <code>.mcp.json</code> in your project root (or <code>~/.claude/settings.json</code> under <code>mcpServers</code> for global)</p>
+          <pre><code class="language-json">{
+  "mcpServers": {
+    "boyce": {
+      "command": "boyce",
+      "env": {
+        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
+      }
+    }
+  }
+}</code></pre>
+          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
+            <li style="margin-bottom: 0.5rem;">Run <code>boyce-init</code> in your project root &mdash; it writes <code>.mcp.json</code> automatically</li>
+            <li style="margin-bottom: 0.5rem;">Start a new Claude Code session in the project directory</li>
+            <li style="margin-bottom: 0.5rem;">Test: <em>&ldquo;Call the boyce ingest_source tool on my schema, then get_schema.&rdquo;</em></li>
+          </ol>
+          <p class="muted">Claude Code discovers <code>.mcp.json</code> automatically when you start a session in a directory that contains one.</p>
+        </div>
+
+        <!-- Cline -->
+        <div class="tab-content" id="tab-cline">
+          <p>Cline is MCP-native. No API key needed &mdash; Cline&rsquo;s own model drives the interaction.</p>
+          <p><strong>Via Cline settings:</strong> Open Cline &rarr; MCP Servers &rarr; Add Server</p>
+          <ul style="color: var(--text-secondary); padding-left: 1.25rem; margin-bottom: 1rem;">
+            <li>Name: <code>boyce</code></li>
+            <li>Command: <code>boyce</code></li>
+            <li>Transport: <code>stdio</code></li>
+          </ul>
+          <p><strong>Or via config file</strong> (usually at <code>~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json</code>):</p>
+          <pre><code class="language-json">{
+  "mcpServers": {
+    "boyce": {
+      "command": "boyce",
+      "args": [],
+      "disabled": false,
+      "autoApprove": [],
+      "env": {
+        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
+      }
+    }
+  }
+}</code></pre>
+          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
+            <li style="margin-bottom: 0.5rem;">Add config above via Cline UI or config file</li>
+            <li style="margin-bottom: 0.5rem;">Reload Cline</li>
+            <li style="margin-bottom: 0.5rem;">Boyce should appear as connected in the MCP panel</li>
+            <li style="margin-bottom: 0.5rem;">Test: <em>&ldquo;Use boyce to get the schema.&rdquo;</em></li>
+          </ol>
+        </div>
+
+        <!-- Continue.dev -->
+        <div class="tab-content" id="tab-continue">
+          <p>Continue.dev supports MCP servers via its config file.</p>
+          <p><strong>For <code>~/.continue/config.yaml</code>:</strong></p>
+          <pre><code class="language-bash">mcpServers:
+  - name: boyce
+    command: boyce
+    args: []
+    env:
+      BOYCE_DB_URL: postgresql://user:pass@host:5432/db</code></pre>
+          <p><strong>For <code>~/.continue/config.json</code>:</strong></p>
+          <pre><code class="language-json">{
+  "experimental": {
+    "modelContextProtocolServers": [
+      {
+        "transport": {
+          "type": "stdio",
+          "command": "boyce",
+          "args": []
+        }
+      }
+    ]
+  }
+}</code></pre>
+          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
+            <li style="margin-bottom: 0.5rem;">Edit the config file above</li>
+            <li style="margin-bottom: 0.5rem;">Reload Continue via VS Code command palette: <em>Continue: Reload</em></li>
+            <li style="margin-bottom: 0.5rem;">Test: <em>&ldquo;@boyce get the schema.&rdquo;</em></li>
+          </ol>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Step 3: Load a schema -->
+    <section>
+      <h2>Step 3 &mdash; Load Your Schema</h2>
+      <p>Point Boyce at your database or project. It figures out the rest:</p>
+      <pre><code class="language-bash"># Scan a directory (auto-detects dbt, LookML, DDL, SQLite, Django, SQLAlchemy, Prisma, CSV, Parquet)
+boyce-scan ./my-project/
+
+# Or ingest from your MCP host:
+# Tool: ingest_source
+# Args: source_path: "./my-project/"</code></pre>
+      <p>Then verify with <code>get_schema</code> &mdash; it returns the full entity and field list your host LLM can reason about.</p>
+    </section>
+
+    <!-- With a live database -->
+    <section>
+      <h2>With a Live Database</h2>
+      <p>Set <code>BOYCE_DB_URL</code> to unlock EXPLAIN pre-flight validation and column profiling:</p>
+      <pre><code class="language-bash">export BOYCE_DB_URL="postgresql://user:pass@host:5432/mydb"
+boyce   # MCP server on stdio with live DB adapter</code></pre>
+      <p>Or add it to your MCP host config under <code>"env"</code> as shown in the tabs above.</p>
+      <p class="muted">Requires: <code>pip install "boyce[postgres]"</code> (adds asyncpg). All database access is read-only &mdash; write operations are rejected at two independent layers.</p>
+    </section>
+
+    <!-- Windsurf / VS Code / JetBrains -->
+    <section>
+      <h2>Windsurf, VS Code, JetBrains</h2>
+      <p><code>boyce-init</code> also supports Windsurf, VS Code (native MCP via <code>.vscode/mcp.json</code>), and JetBrains/DataGrip. Run it and follow the prompts.</p>
+      <pre><code class="language-bash">boyce-init</code></pre>
+    </section>
+
+    <!-- Path 2 note -->
+    <section>
+      <h2>CLI and HTTP API (Path 2)</h2>
+      <p>For the CLI (<code>boyce ask "..."</code>) and HTTP API (<code>boyce serve --http</code>), Boyce uses its internal query planner and requires an LLM key:</p>
+      <pre><code class="language-bash">export BOYCE_PROVIDER=anthropic
+export BOYCE_MODEL=claude-sonnet-4-6
+export ANTHROPIC_API_KEY=sk-ant-...
+export BOYCE_DB_URL=postgresql://user:pass@host:5432/db
+
+boyce ask "total revenue by customer segment last quarter"</code></pre>
+      <p class="muted">Uses <a href="https://docs.litellm.ai/docs/providers">LiteLLM</a> &mdash; supports Anthropic, OpenAI, Ollama (local), vLLM (local), Azure, Bedrock, Vertex, Mistral, and 100+ providers. <a href="https://github.com/boyce-io/boyce/blob/main/docs/local-llm-setup.md">Local LLM setup guide &rarr;</a></p>
+    </section>
+
+    <!-- Troubleshooting -->
+    <section>
+      <h2>Troubleshooting</h2>
+      <p>If Boyce tools don&rsquo;t appear in your host, or you get connection errors:</p>
+      <ul style="color: var(--text-secondary); padding-left: 1.25rem;">
+        <li style="margin-bottom: 0.5rem;">Confirm <code>boyce</code> is on your PATH: <code>which boyce</code></li>
+        <li style="margin-bottom: 0.5rem;">If using a virtual environment, use the full path in your config: <code>/path/to/.venv/bin/boyce</code></li>
+        <li style="margin-bottom: 0.5rem;">Restart your MCP host after editing the config</li>
+        <li style="margin-bottom: 0.5rem;">Check the <a href="https://github.com/boyce-io/boyce/blob/main/docs/troubleshooting.md">full troubleshooting guide</a> for detailed diagnostics</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="/boyce/">Boyce</a>
+        <a href="https://github.com/boyce-io/boyce">GitHub</a>
+        <a href="https://pypi.org/project/boyce/">PyPI</a>
+        <a href="https://github.com/boyce-io/boyce/blob/main/docs/troubleshooting.md">Troubleshooting</a>
+        <a href="/boyce/null-trap/">The Null Trap</a>
+      </div>
+      <p>Named for <a href="https://en.wikipedia.org/wiki/Raymond_F._Boyce">Raymond F. Boyce</a>, co-inventor of SQL (1974).</p>
+      <p>Built by <a href="/">Convergent Methods</a> &middot; MIT License &middot; &copy; 2026</p>
+    </div>
+  </footer>
+
+  <!-- Prism.js syntax highlighting -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+
+  <!-- Tab switching -->
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var tabId = this.getAttribute('data-tab');
+        var tabs = this.closest('.tabs');
+        tabs.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+        tabs.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+        this.classList.add('active');
+        tabs.querySelector('#tab-' + tabId).classList.add('active');
+      });
+    });
+  </script>
+
+</body>
+</html>
