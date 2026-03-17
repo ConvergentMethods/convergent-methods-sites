@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Boyce Integration Guides &mdash; Claude Desktop, Cursor, Claude Code, Cline</title>
-  <meta name="description" content="Connect Boyce to Claude Desktop, Cursor, Claude Code, Cline, or Continue.dev in minutes. No API key required for MCP hosts.">
+  <title>Boyce Integration Guides &mdash; Claude Code, Cursor, VS Code, Codex, DataGrip</title>
+  <meta name="description" content="Connect Boyce to Claude Code, Cursor, VS Code, Codex, DataGrip/JetBrains, or Claude Desktop in minutes. No API key required for MCP hosts.">
   <link rel="stylesheet" href="../../styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 </head>
@@ -26,7 +26,7 @@
     <div class="hero" style="padding-bottom: 2rem;">
       <h1>Integration Guides</h1>
       <p class="tagline">Connect Boyce to your MCP host in minutes.</p>
-      <p class="explainer">MCP hosts &mdash; Claude Desktop, Cursor, Claude Code, Cline, Continue.dev &mdash; do not need a Boyce API key. The host&rsquo;s own model handles reasoning. Boyce supplies schema context and deterministic SQL.</p>
+      <p class="explainer">MCP hosts &mdash; Claude Code, Cursor, VS Code, Codex, DataGrip/JetBrains, Claude Desktop &mdash; do not need a Boyce API key. The host&rsquo;s own model handles reasoning. Boyce supplies schema context and deterministic SQL.</p>
     </div>
 
     <!-- Install first -->
@@ -37,8 +37,8 @@
 # With live Postgres/Redshift adapter (enables EXPLAIN pre-flight + column profiling)
 pip install "boyce[postgres]"</code></pre>
       <p>Then run the setup wizard &mdash; it auto-detects your MCP host and writes the config:</p>
-      <pre><code class="language-bash">boyce-init</code></pre>
-      <p class="muted">Supports: Claude Desktop, Cursor, Claude Code, VS Code, JetBrains, Windsurf. Or configure manually below.</p>
+      <pre><code class="language-bash">boyce init</code></pre>
+      <p class="muted">Supports: Claude Code, Cursor, VS Code, Codex, DataGrip/JetBrains, Claude Desktop, Windsurf, and more. Or configure manually below.</p>
     </section>
 
     <!-- Host guides -->
@@ -47,15 +47,112 @@ pip install "boyce[postgres]"</code></pre>
 
       <div class="tabs">
         <div class="tab-buttons">
-          <button class="tab-btn active" data-tab="claude-desktop">Claude Desktop</button>
+          <button class="tab-btn active" data-tab="claude-code">Claude Code</button>
           <button class="tab-btn" data-tab="cursor">Cursor</button>
-          <button class="tab-btn" data-tab="claude-code">Claude Code</button>
-          <button class="tab-btn" data-tab="cline">Cline</button>
-          <button class="tab-btn" data-tab="continue">Continue.dev</button>
+          <button class="tab-btn" data-tab="vscode">VS Code</button>
+          <button class="tab-btn" data-tab="codex">Codex</button>
+          <button class="tab-btn" data-tab="datagrip">DataGrip / JetBrains</button>
+          <button class="tab-btn" data-tab="claude-desktop">Claude Desktop</button>
+        </div>
+
+        <!-- Claude Code -->
+        <div class="tab-content active" id="tab-claude-code">
+          <p><strong>Config file:</strong> <code>.mcp.json</code> in your project root (or <code>~/.claude/settings.json</code> under <code>mcpServers</code> for global)</p>
+          <pre><code class="language-json">{
+  "mcpServers": {
+    "boyce": {
+      "command": "boyce",
+      "env": {
+        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
+      }
+    }
+  }
+}</code></pre>
+          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
+            <li style="margin-bottom: 0.5rem;">Run <code>boyce init</code> in your project root &mdash; it writes <code>.mcp.json</code> automatically</li>
+            <li style="margin-bottom: 0.5rem;">Start a new Claude Code session in the project directory</li>
+            <li style="margin-bottom: 0.5rem;">Test: <em>&ldquo;Call the boyce ingest_source tool on my schema, then get_schema.&rdquo;</em></li>
+          </ol>
+          <p class="muted">Claude Code discovers <code>.mcp.json</code> automatically when you start a session in a directory that contains one.</p>
+        </div>
+
+        <!-- Cursor -->
+        <div class="tab-content" id="tab-cursor">
+          <p><strong>Config file:</strong> <code>.cursor/mcp.json</code> in your project root (or <code>~/.cursor/mcp.json</code> for global)</p>
+          <pre><code class="language-json">{
+  "mcpServers": {
+    "boyce": {
+      "command": "boyce",
+      "env": {
+        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
+      }
+    }
+  }
+}</code></pre>
+          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
+            <li style="margin-bottom: 0.5rem;">Create <code>.cursor/mcp.json</code> in your project (or run <code>boyce init</code>)</li>
+            <li style="margin-bottom: 0.5rem;">Reload Cursor: <kbd>Cmd+Shift+P</kbd> &rarr; <em>Developer: Reload Window</em></li>
+            <li style="margin-bottom: 0.5rem;">Open Cursor chat (<kbd>Cmd+L</kbd>) and test: <em>&ldquo;Use boyce get_schema to list available entities.&rdquo;</em></li>
+          </ol>
+        </div>
+
+        <!-- VS Code -->
+        <div class="tab-content" id="tab-vscode">
+          <p>VS Code supports MCP natively via <code>.vscode/mcp.json</code> (per-project) or user settings (global).</p>
+          <p><strong>Config file:</strong> <code>.vscode/mcp.json</code> in your project root</p>
+          <pre><code class="language-json">{
+  "servers": {
+    "boyce": {
+      "command": "boyce",
+      "env": {
+        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
+      }
+    }
+  }
+}</code></pre>
+          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
+            <li style="margin-bottom: 0.5rem;">Create <code>.vscode/mcp.json</code> in your project (or run <code>boyce init</code>)</li>
+            <li style="margin-bottom: 0.5rem;">Reload VS Code: <kbd>Cmd+Shift+P</kbd> &rarr; <em>Developer: Reload Window</em></li>
+            <li style="margin-bottom: 0.5rem;">Open Copilot Chat and test: <em>&ldquo;Use boyce get_schema to list available entities.&rdquo;</em></li>
+          </ol>
+          <p class="muted">Requires VS Code 1.99+ with the Copilot Chat extension. MCP tools appear as agent tools in Copilot Chat.</p>
+        </div>
+
+        <!-- Codex -->
+        <div class="tab-content" id="tab-codex">
+          <p>OpenAI Codex CLI reads MCP server config from <code>~/.codex/config.toml</code>.</p>
+          <p><strong>Config file:</strong> <code>~/.codex/config.toml</code></p>
+          <pre><code class="language-toml">[mcp_servers.boyce]
+command = "boyce"
+args = []
+
+[mcp_servers.boyce.env]
+BOYCE_DB_URL = "postgresql://user:pass@host:5432/dbname"</code></pre>
+          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
+            <li style="margin-bottom: 0.5rem;">Edit <code>~/.codex/config.toml</code> (create the file and directory if they don&rsquo;t exist)</li>
+            <li style="margin-bottom: 0.5rem;">Start a new Codex session</li>
+            <li style="margin-bottom: 0.5rem;">Test: <em>&ldquo;Use boyce get_schema to list available entities.&rdquo;</em></li>
+          </ol>
+          <p class="muted"><code>BOYCE_DB_URL</code> is optional. Without it, SQL generation works; EXPLAIN pre-flight returns <code>"unchecked"</code>.</p>
+        </div>
+
+        <!-- DataGrip / JetBrains -->
+        <div class="tab-content" id="tab-datagrip">
+          <p>JetBrains IDEs (DataGrip, IntelliJ, PyCharm, WebStorm, etc.) support MCP via the AI Assistant plugin.</p>
+          <p><strong>Settings path:</strong> Settings &rarr; Tools &rarr; AI Assistant &rarr; MCP Servers</p>
+          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
+            <li style="margin-bottom: 0.5rem;">Open <strong>Settings</strong> (<kbd>Cmd+,</kbd>) &rarr; <strong>Tools</strong> &rarr; <strong>AI Assistant</strong> &rarr; <strong>MCP Servers</strong></li>
+            <li style="margin-bottom: 0.5rem;">Click <strong>+</strong> to add a new server</li>
+            <li style="margin-bottom: 0.5rem;">Set command to <code>boyce</code></li>
+            <li style="margin-bottom: 0.5rem;">Optionally add environment variable <code>BOYCE_DB_URL</code> for live database features</li>
+            <li style="margin-bottom: 0.5rem;">Click <strong>OK</strong> and restart the AI Assistant</li>
+            <li style="margin-bottom: 0.5rem;">Test in AI chat: <em>&ldquo;Use boyce get_schema to list available entities.&rdquo;</em></li>
+          </ol>
+          <p class="muted">Requires JetBrains AI Assistant plugin with MCP support (2025.1+). Or run <code>boyce init</code> to auto-configure.</p>
         </div>
 
         <!-- Claude Desktop -->
-        <div class="tab-content active" id="tab-claude-desktop">
+        <div class="tab-content" id="tab-claude-desktop">
           <p><strong>Config file:</strong> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
           <pre><code class="language-json">{
   "mcpServers": {
@@ -76,109 +173,6 @@ pip install "boyce[postgres]"</code></pre>
           </ol>
         </div>
 
-        <!-- Cursor -->
-        <div class="tab-content" id="tab-cursor">
-          <p><strong>Config file:</strong> <code>.cursor/mcp.json</code> in your project root (or <code>~/.cursor/mcp.json</code> for global)</p>
-          <pre><code class="language-json">{
-  "mcpServers": {
-    "boyce": {
-      "command": "boyce",
-      "env": {
-        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
-      }
-    }
-  }
-}</code></pre>
-          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
-            <li style="margin-bottom: 0.5rem;">Create <code>.cursor/mcp.json</code> in your project (or run <code>boyce-init</code>)</li>
-            <li style="margin-bottom: 0.5rem;">Reload Cursor: <kbd>Cmd+Shift+P</kbd> &rarr; <em>Developer: Reload Window</em></li>
-            <li style="margin-bottom: 0.5rem;">Open Cursor chat (<kbd>Cmd+L</kbd>) and test: <em>&ldquo;Use boyce get_schema to list available entities.&rdquo;</em></li>
-          </ol>
-        </div>
-
-        <!-- Claude Code -->
-        <div class="tab-content" id="tab-claude-code">
-          <p><strong>Config file:</strong> <code>.mcp.json</code> in your project root (or <code>~/.claude/settings.json</code> under <code>mcpServers</code> for global)</p>
-          <pre><code class="language-json">{
-  "mcpServers": {
-    "boyce": {
-      "command": "boyce",
-      "env": {
-        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
-      }
-    }
-  }
-}</code></pre>
-          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
-            <li style="margin-bottom: 0.5rem;">Run <code>boyce-init</code> in your project root &mdash; it writes <code>.mcp.json</code> automatically</li>
-            <li style="margin-bottom: 0.5rem;">Start a new Claude Code session in the project directory</li>
-            <li style="margin-bottom: 0.5rem;">Test: <em>&ldquo;Call the boyce ingest_source tool on my schema, then get_schema.&rdquo;</em></li>
-          </ol>
-          <p class="muted">Claude Code discovers <code>.mcp.json</code> automatically when you start a session in a directory that contains one.</p>
-        </div>
-
-        <!-- Cline -->
-        <div class="tab-content" id="tab-cline">
-          <p>Cline is MCP-native. No API key needed &mdash; Cline&rsquo;s own model drives the interaction.</p>
-          <p><strong>Via Cline settings:</strong> Open Cline &rarr; MCP Servers &rarr; Add Server</p>
-          <ul style="color: var(--text-secondary); padding-left: 1.25rem; margin-bottom: 1rem;">
-            <li>Name: <code>boyce</code></li>
-            <li>Command: <code>boyce</code></li>
-            <li>Transport: <code>stdio</code></li>
-          </ul>
-          <p><strong>Or via config file</strong> (usually at <code>~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json</code>):</p>
-          <pre><code class="language-json">{
-  "mcpServers": {
-    "boyce": {
-      "command": "boyce",
-      "args": [],
-      "disabled": false,
-      "autoApprove": [],
-      "env": {
-        "BOYCE_DB_URL": "postgresql://user:pass@host:5432/db"
-      }
-    }
-  }
-}</code></pre>
-          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
-            <li style="margin-bottom: 0.5rem;">Add config above via Cline UI or config file</li>
-            <li style="margin-bottom: 0.5rem;">Reload Cline</li>
-            <li style="margin-bottom: 0.5rem;">Boyce should appear as connected in the MCP panel</li>
-            <li style="margin-bottom: 0.5rem;">Test: <em>&ldquo;Use boyce to get the schema.&rdquo;</em></li>
-          </ol>
-        </div>
-
-        <!-- Continue.dev -->
-        <div class="tab-content" id="tab-continue">
-          <p>Continue.dev supports MCP servers via its config file.</p>
-          <p><strong>For <code>~/.continue/config.yaml</code>:</strong></p>
-          <pre><code class="language-bash">mcpServers:
-  - name: boyce
-    command: boyce
-    args: []
-    env:
-      BOYCE_DB_URL: postgresql://user:pass@host:5432/db</code></pre>
-          <p><strong>For <code>~/.continue/config.json</code>:</strong></p>
-          <pre><code class="language-json">{
-  "experimental": {
-    "modelContextProtocolServers": [
-      {
-        "transport": {
-          "type": "stdio",
-          "command": "boyce",
-          "args": []
-        }
-      }
-    ]
-  }
-}</code></pre>
-          <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
-            <li style="margin-bottom: 0.5rem;">Edit the config file above</li>
-            <li style="margin-bottom: 0.5rem;">Reload Continue via VS Code command palette: <em>Continue: Reload</em></li>
-            <li style="margin-bottom: 0.5rem;">Test: <em>&ldquo;@boyce get the schema.&rdquo;</em></li>
-          </ol>
-        </div>
-
       </div>
     </section>
 
@@ -187,7 +181,7 @@ pip install "boyce[postgres]"</code></pre>
       <h2>Step 3 &mdash; Load Your Schema</h2>
       <p>Point Boyce at your database or project. It figures out the rest:</p>
       <pre><code class="language-bash"># Scan a directory (auto-detects dbt, LookML, DDL, SQLite, Django, SQLAlchemy, Prisma, CSV, Parquet)
-boyce-scan ./my-project/
+boyce scan ./my-project/
 
 # Or ingest from your MCP host:
 # Tool: ingest_source
@@ -205,11 +199,12 @@ boyce   # MCP server on stdio with live DB adapter</code></pre>
       <p class="muted">Requires: <code>pip install "boyce[postgres]"</code> (adds asyncpg). All database access is read-only &mdash; write operations are rejected at two independent layers.</p>
     </section>
 
-    <!-- Windsurf / VS Code / JetBrains -->
+    <!-- Other MCP hosts -->
     <section>
-      <h2>Windsurf, VS Code, JetBrains</h2>
-      <p><code>boyce-init</code> also supports Windsurf, VS Code (native MCP via <code>.vscode/mcp.json</code>), and JetBrains/DataGrip. Run it and follow the prompts.</p>
-      <pre><code class="language-bash">boyce-init</code></pre>
+      <h2>Other MCP Hosts</h2>
+      <p><code>boyce init</code> also supports Windsurf, Cline, and Continue.dev. Run it and follow the prompts:</p>
+      <pre><code class="language-bash">boyce init</code></pre>
+      <p class="muted">Any MCP host that supports stdio transport works with Boyce. Set the command to <code>boyce</code> and optionally add <code>BOYCE_DB_URL</code> as an environment variable.</p>
     </section>
 
     <!-- Path 2 note -->
@@ -257,6 +252,7 @@ boyce ask "total revenue by customer segment last quarter"</code></pre>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
 
   <!-- Tab switching -->
   <script>

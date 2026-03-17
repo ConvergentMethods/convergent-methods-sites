@@ -110,8 +110,8 @@
       <h2>Quick Start</h2>
       <ol style="color: var(--text-secondary); padding-left: 1.25rem;">
         <li style="margin-bottom: 0.75rem;">Install: <code>pip install boyce</code></li>
-        <li style="margin-bottom: 0.75rem;">Configure: <code>boyce-init</code> <span class="muted">(auto-detects your MCP host)</span></li>
-        <li style="margin-bottom: 0.75rem;">Scan: <code>boyce-scan ./my-project/</code></li>
+        <li style="margin-bottom: 0.75rem;">Configure: <code>boyce init</code> <span class="muted">(auto-detects your MCP host)</span></li>
+        <li style="margin-bottom: 0.75rem;">Scan: <code>boyce scan ./my-project/</code></li>
         <li style="margin-bottom: 0.75rem;">Ask: <code>boyce ask "total revenue by customer segment"</code></li>
       </ol>
     </section>
@@ -134,10 +134,10 @@ pip install "boyce[postgres]"</code></pre>
         </div>
 
         <div class="tab-content active" id="tab-mcp-host">
-          <p>If you use <strong>Claude Desktop, Cursor, Claude Code, Cline, or Windsurf</strong> &mdash; you do not need to configure an LLM provider. The host's model handles reasoning. Boyce supplies schema context and a deterministic SQL compiler via <code>get_schema</code> and <code>build_sql</code>.</p>
+          <p>If you use <strong>Claude Desktop, Cursor, Claude Code, Cline, Windsurf, DataGrip, or Codex</strong> &mdash; you do not need to configure an LLM provider. The host's model handles reasoning. Boyce supplies schema context and a deterministic SQL compiler via <code>get_schema</code> and <code>ask_boyce</code>.</p>
 
           <p>Run the setup wizard:</p>
-          <pre><code class="language-bash">boyce-init</code></pre>
+          <pre><code class="language-bash">boyce init</code></pre>
 
           <p>Or configure manually:</p>
           <pre><code class="language-json">{
@@ -221,7 +221,7 @@ pip install "boyce[postgres]"</code></pre>
     <section>
       <h2>What It Parses</h2>
       <p>Point Boyce at your project. It figures out what you have.</p>
-      <pre><code class="language-bash">boyce-scan ./my-project/</code></pre>
+      <pre><code class="language-bash">boyce scan ./my-project/</code></pre>
       <div class="parser-grid">
         <span class="parser-tag">dbt manifest</span>
         <span class="parser-tag">dbt project</span>
@@ -246,12 +246,12 @@ pip install "boyce[postgres]"</code></pre>
   |     SemanticGraph (NetworkX)      |
   |  entities -> weighted joins       |
   +-----------------------------------+
-        |                    |
-        v  ask_boyce         v  solve_path
-   QueryPlanner          Dijkstra
-   (LiteLLM)             join resolver
-        |                    |
-        +--------+-----------+
+        |
+        v  ask_boyce
+   QueryPlanner  ->  Dijkstra
+   (LiteLLM)         join resolver
+        |                 |
+        +--------+--------+
                  v
         kernel.process_request()    &lt;- ZERO LLM
         SQLBuilder (dialect-aware)
@@ -278,6 +278,7 @@ pip install "boyce[postgres]"</code></pre>
       </div>
       <p>Named for <a href="https://en.wikipedia.org/wiki/Raymond_F._Boyce">Raymond F. Boyce</a>, co-inventor of SQL (1974).</p>
       <p>Built by <a href="/">Convergent Methods</a> &middot; MIT License &middot; &copy; 2026</p>
+      <p><a href="mailto:will@convergentmethods.com">will@convergentmethods.com</a></p>
     </div>
   </footer>
 
