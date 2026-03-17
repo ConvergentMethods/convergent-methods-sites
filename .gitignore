@@ -1,0 +1,5 @@
+# MCP host configs (developer-specific)
+.mcp.json
+
+# macOS
+.DS_Store
