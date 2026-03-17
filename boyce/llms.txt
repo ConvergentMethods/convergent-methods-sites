@@ -10,7 +10,7 @@ Run `pip install boyce` to install. Add live DB adapter: `pip install "boyce[pos
 
 ## First Run
 
-Run `boyce-init` to auto-detect your MCP host (Claude Desktop, Cursor, Claude Code, Cline, Windsurf) and write the mcpServers config. Or configure manually — see llms-full.txt.
+Run `boyce init` to auto-detect your MCP host (Claude Desktop, Cursor, Claude Code, VS Code, JetBrains, Windsurf) and write the mcpServers config. Or configure manually — see llms-full.txt.
 
 ## MCP Configuration (no API key needed for MCP hosts)
 
@@ -38,8 +38,8 @@ Redshift, Postgres, DuckDB, BigQuery (dialect-aware SQL generation)
 - MIT licensed
 - Uses LiteLLM for NL→SQL (supports Anthropic, OpenAI, Ollama, 100+ providers)
 - MCP hosts do NOT need an API key — host LLM calls get_schema + ask_boyce (Mode A) directly
-- 10 source parsers with auto-detection via `boyce-scan`
-- Setup wizard: `boyce-init` (detects Claude Desktop, Cursor, Claude Code)
+- 10 source parsers with auto-detection via `boyce scan`
+- Setup wizard: `boyce init` (detects Claude Desktop, Cursor, Claude Code, VS Code, JetBrains, Windsurf)
 
 ## Detailed Reference
 

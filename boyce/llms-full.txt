@@ -1,10 +1,10 @@
 # Boyce — Complete Agent Reference
 
-Version: 0.1.0
+Version: see PyPI for current release
 
 Boyce is a semantic protocol and safety layer for agentic database workflows. It gives AI agents structured database intelligence to generate correct, safe SQL — deterministically.
 
-Boyce is an MCP server (Model Context Protocol) exposing 8 tools. The SQL compiler uses zero LLM calls. Same inputs produce identical SQL, byte-for-byte, every time. MIT licensed. Python 3.10+.
+Boyce is an MCP server (Model Context Protocol) exposing 7 tools. The SQL compiler uses zero LLM calls. Same inputs produce identical SQL, byte-for-byte, every time. MIT licensed. Python 3.10+.
 
 ## Install
 
@@ -15,17 +15,17 @@ pip install "boyce[postgres]"    # adds asyncpg for live DB adapter
 
 ## First Run
 
-After install, run `boyce-init` to auto-detect your MCP host and write the mcpServers config. Supported hosts: Claude Desktop, Cursor, Claude Code, Cline, Windsurf. For manual config see Path 1 below.
+After install, run `boyce init` to auto-detect your MCP host and write the mcpServers config. Supported hosts: Claude Desktop, Cursor, Claude Code, VS Code, JetBrains, Windsurf. For manual config see Path 1 below.
 
 To verify Boyce is running after MCP config: call `get_schema` — if it returns an empty snapshot list, Boyce is alive but no sources have been ingested yet. Call `ingest_source` with a `source_path` to load your first schema.
 
 ## MCP Configuration
 
-### Path 1: MCP Hosts (Claude Desktop, Cursor, Claude Code, Cline, Windsurf)
+### Path 1: MCP Hosts (Claude Desktop, Cursor, Claude Code, VS Code, JetBrains, Windsurf)
 
-No Boyce API key needed. The host LLM calls `get_schema` to read the database schema, constructs a `StructuredFilter`, and passes it to `build_sql`. Boyce compiles deterministic SQL with zero LLM calls.
+No Boyce API key needed. The host LLM calls `get_schema` to read the database schema, constructs a `StructuredFilter`, and passes it to `ask_boyce` (Mode A). Boyce compiles deterministic SQL with zero LLM calls.
 
-Setup wizard: `boyce-init` (auto-detects host and writes config)
+Setup wizard: `boyce init` (auto-detects host and writes config)
 
 Manual config:
 ```json
@@ -71,8 +71,8 @@ Uses LiteLLM — supports Anthropic, OpenAI, Ollama (local), vLLM (local), Azure
 - `boyce ask "..."`: NL → SQL, output to stdout
 - `boyce chat "..."`: Conversational mode with intent routing
 - `boyce serve --http [--port 8741]`: HTTP API mode (Starlette + Bearer auth)
-- `boyce-init`: Setup wizard for MCP host configuration
-- `boyce-scan <path>`: Scan directory, auto-detect sources, output JSON report
+- `boyce init`: Setup wizard for MCP host configuration
+- `boyce scan <path>`: Scan directory, auto-detect sources, output JSON report
 
 ## Environment Variables
 
@@ -194,7 +194,7 @@ Requires: BOYCE_DB_URL env var + asyncpg installed.
 
 ## StructuredFilter Format
 
-The JSON contract between intent and SQL generation. Construct this from `get_schema` output and pass to `build_sql`.
+The JSON contract between intent and SQL generation. Construct this from `get_schema` output and pass to `ask_boyce` (Mode A).
 
 ```json
 {
@@ -252,7 +252,7 @@ SUM, COUNT, COUNT_DISTINCT, AVG, MIN, MAX
 | csv | *.csv files | CSV headers → fields |
 | parquet | *.parquet files | Parquet schema → fields |
 
-Auto-detection: `boyce-scan ./path/` walks the directory tree and detects all parseable sources.
+Auto-detection: `boyce scan ./path/` walks the directory tree and detects all parseable sources.
 
 ## Supported SQL Dialects
 
@@ -275,7 +275,7 @@ Auto-detection: `boyce-scan ./path/` walks the directory tree and detects all pa
 - process_request() takes a single snapshot — multi-snapshot merge not yet implemented
 - PostgresAdapter supports asyncpg only (Postgres/Redshift) — no BigQuery or DuckDB live adapter
 - SemanticGraph is in-memory; rebuilt from persisted snapshots on server start
-- QueryPlanner (ask_boyce) requires LLM provider config; build_sql does not
+- ask_boyce Mode B/C requires LLM provider config; Mode A (StructuredFilter) does not
 
 ## Links
 
