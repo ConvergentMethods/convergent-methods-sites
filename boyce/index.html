@@ -65,6 +65,8 @@
         <a href="https://github.com/boyce-io/boyce">GitHub</a>
         <a href="https://pypi.org/project/boyce/">PyPI</a>
         <a href="https://github.com/boyce-io/boyce#readme">Docs</a>
+        <a href="llms.txt">llms.txt</a>
+        <a href="llms-full.txt">llms-full.txt</a>
       </div>
     </div>
 
@@ -100,6 +102,10 @@
           <tr>
             <td><strong>&#x1F6E1; The Nervous System</strong></td>
             <td>EXPLAIN pre-flight on every generated query. Bad SQL is caught at planning time &mdash; not at 2am in your on-call rotation.</td>
+          </tr>
+          <tr>
+            <td><strong>&#x1F4AC; Response Intelligence</strong></td>
+            <td>Every tool response includes a <code>next_step</code> directive and contextual safety findings &mdash; your agent always knows what Boyce found and exactly what to do next. Safety warnings only appear when material; clean queries return clean responses.</td>
           </tr>
         </tbody>
       </table>
@@ -187,7 +193,7 @@ pip install "boyce[postgres]"</code></pre>
         <tbody>
           <tr>
             <td><code>ingest_source</code></td>
-            <td>Parse a SemanticSnapshot from dbt, LookML, DDL, SQLite, Django, SQLAlchemy, Prisma, CSV, or Parquet</td>
+            <td>Teach Boyce about a database &mdash; accepts dbt, LookML, DDL, SQLite, Django, SQLAlchemy, Prisma, CSV, Parquet, or live PostgreSQL DSN (10+ formats, auto-detected)</td>
           </tr>
           <tr>
             <td><code>ingest_definition</code></td>
@@ -207,11 +213,11 @@ pip install "boyce[postgres]"</code></pre>
           </tr>
           <tr>
             <td><code>query_database</code></td>
-            <td>Execute read-only SELECT against live database</td>
+            <td>Execute read-only SELECT with NULL risk scan and EXPLAIN pre-flight on every query</td>
           </tr>
           <tr>
             <td><code>profile_data</code></td>
-            <td>Null %, distinct count, min/max for any column</td>
+            <td>See how a column actually behaves &mdash; null rate, distinct count, min/max</td>
           </tr>
         </tbody>
       </table>
@@ -274,7 +280,8 @@ pip install "boyce[postgres]"</code></pre>
         <a href="https://github.com/boyce-io/boyce/blob/main/docs/troubleshooting.md">Troubleshooting</a>
         <a href="docs/">Integrations</a>
         <a href="null-trap/">The Null Trap</a>
-        <a href="llms.txt">Agent-readable docs: llms.txt</a>
+        <a href="llms.txt">llms.txt</a>
+        <a href="llms-full.txt">llms-full.txt</a>
       </div>
       <p>Named for <a href="https://en.wikipedia.org/wiki/Raymond_F._Boyce">Raymond F. Boyce</a>, co-inventor of SQL (1974).</p>
       <p>Built by <a href="/">Convergent Methods</a> &middot; MIT License &middot; &copy; 2026</p>

@@ -2,9 +2,9 @@
 
 Version: see PyPI for current release
 
-Boyce is a semantic protocol and safety layer for agentic database workflows. It gives AI agents structured database intelligence to generate correct, safe SQL — deterministically.
+Without Boyce, agents querying databases generate SQL that looks correct and returns wrong answers — silently. A naive equality filter on a column with 30% NULLs drops those rows with no error. A join resolved by name-match instead of foreign key produces duplicates. Boyce checks SQL against data reality before it runs.
 
-Boyce is an MCP server (Model Context Protocol) exposing 7 tools. The SQL compiler uses zero LLM calls. Same inputs produce identical SQL, byte-for-byte, every time. MIT licensed. Python 3.10+.
+Boyce is an MCP server exposing 7 tools. The SQL compiler uses zero LLM calls — same inputs produce identical SQL, byte-for-byte, every time. MIT licensed. Python 3.10+.
 
 ## Install
 
@@ -15,13 +15,13 @@ pip install "boyce[postgres]"    # adds asyncpg for live DB adapter
 
 ## First Run
 
-After install, run `boyce init` to auto-detect your MCP host and write the mcpServers config. Supported hosts: Claude Desktop, Cursor, Claude Code, VS Code, JetBrains, Windsurf. For manual config see Path 1 below.
+After install, run `boyce init` to auto-detect your MCP host and write the config. Supported hosts: Claude Code, Cursor, VS Code, Codex, DataGrip/JetBrains, Claude Desktop, Windsurf. For manual config see Path 1 below.
 
 To verify Boyce is running after MCP config: call `get_schema` — if it returns an empty snapshot list, Boyce is alive but no sources have been ingested yet. Call `ingest_source` with a `source_path` to load your first schema.
 
 ## MCP Configuration
 
-### Path 1: MCP Hosts (Claude Desktop, Cursor, Claude Code, VS Code, JetBrains, Windsurf)
+### Path 1: MCP Hosts (Claude Code, Cursor, VS Code, Codex, DataGrip, Claude Desktop, Windsurf)
 
 No Boyce API key needed. The host LLM calls `get_schema` to read the database schema, constructs a `StructuredFilter`, and passes it to `ask_boyce` (Mode A). Boyce compiles deterministic SQL with zero LLM calls.
 
@@ -86,109 +86,236 @@ Uses LiteLLM — supports Anthropic, OpenAI, Ollama (local), vLLM (local), Azure
 | BOYCE_HTTP_TOKEN | HTTP API only | Bearer token for `boyce serve --http` |
 | BOYCE_STATEMENT_TIMEOUT_MS | Optional | Per-statement timeout in ms (default: 30000) |
 
+## Response Format
+
+Every successful tool response includes behavioral fields at the top of the response object, before the primary data payload.
+
+### next_step (always present)
+
+Directive language specifying the exact next tool and action. Follow it.
+
+| Tool | Condition | next_step |
+|------|-----------|-----------|
+| ingest_source | success | "Snapshot '{name}' is ready. Use get_schema to explore tables, or ask_boyce with a natural language question to query immediately." |
+| ingest_definition | success | "Definition stored. ask_boyce will apply it automatically — no additional steps needed." |
+| get_schema | success | "Use this schema to construct a StructuredFilter for ask_boyce. Specify table, columns, and conditions." |
+| ask_boyce | Mode A/B success | "Pass the SQL above to query_database to execute it." |
+| ask_boyce | Mode C | "Call ask_boyce again with the suggested_filter above as the structured_filter parameter." |
+| validate_sql | clean | "SQL passed all checks. Pass to query_database to execute." |
+| validate_sql | issues found | "Issues detected. Resubmit the original question through ask_boyce for automatic remediation, or fix manually and re-validate." |
+| query_database | clean | "Query complete. Use profile_data on any column to inspect distributions before building downstream logic." |
+| query_database | NULL risk detected | "Results may be incomplete — see present_to_user. Resubmit through ask_boyce for NULL-safe compilation." |
+| profile_data | success | "Use these distributions to inform your next ask_boyce query or validate assumptions before joining." |
+
+### present_to_user (only when material)
+
+Loss-framed finding. Only present when Boyce detected something that could corrupt results:
+- NULL trap: "`table.column` is 30% NULL — equality filter excludes those rows silently. Resubmit through ask_boyce for automatic NULL handling."
+- EXPLAIN failure: "EXPLAIN pre-flight failed: [error]. ask_boyce generates validated SQL that passes EXPLAIN."
+- Compat risks: "N Redshift compatibility issue(s) detected. ask_boyce generates dialect-safe SQL."
+
+Not present on clean queries. When it appears, route the query through ask_boyce for automatic remediation.
+
+### data_reality (only when relevant)
+
+Snapshot-based column insights for columns the query touched in WHERE, GROUP BY, or JOIN ON clauses. Includes nullable flag, clause context, and for JOIN columns: join confidence weight and confidence label. Only fires when there is material information the model could not have known from schema alone.
+
+Example response with all advertising fields:
+```json
+{
+  "next_step": "Pass the SQL above to query_database to execute it.",
+  "present_to_user": "`orders.status` is 28% NULL — equality filter excludes those rows silently. Resubmit through ask_boyce for automatic NULL handling.",
+  "data_reality": {
+    "orders.status": {
+      "nullable": true,
+      "used_in": "WHERE",
+      "insight": "Nullable column in WHERE — NULL rows excluded by equality filters."
+    }
+  },
+  "sql": "SELECT ...",
+  "validation": {"status": "verified", "error": null, "cost_estimate": 0.5}
+}
+```
+
 ## MCP Tools — Complete Reference
 
-7 tools total. All work without LLM provider config except `ask_boyce` Mode B/C, which requires `BOYCE_PROVIDER` + `BOYCE_MODEL`. MCP host path (Mode A): host LLM calls `get_schema` → constructs StructuredFilter → calls `ask_boyce` with no Boyce credentials needed. Tools that require a live database connection (`query_database`, `profile_data`, `validate_sql` EXPLAIN) also require `BOYCE_DB_URL` + asyncpg installed.
+7 tools total. All queries validated against 3 safety dimensions: NULL traps, EXPLAIN pre-flight, dialect compatibility. All tools work without LLM provider config except `ask_boyce` Mode B/C (requires `BOYCE_PROVIDER` + `BOYCE_MODEL`). Live database tools (`query_database`, `profile_data`, `validate_sql` EXPLAIN) also require `BOYCE_DB_URL` + asyncpg installed.
 
 ### ingest_source
 
-Parse and ingest a SemanticSnapshot from a file path or pre-built JSON dict.
+Teach Boyce about a database — point it at any schema source and get a semantic snapshot.
+
+Accepts 10+ formats (DDL, dbt, LookML, SQLite, Django, SQLAlchemy, Prisma, CSV, Parquet, live PostgreSQL DSN) — auto-detected from the path. Snapshots persist across sessions.
+
+Call this first. All other tools (ask_boyce, get_schema, validate_sql, query_database, profile_data) require a snapshot.
 
 Parameters:
-- `source_path` (string, optional): Path to dbt manifest.json, dbt project directory, LookML .lkml file, SQLite .db file, DDL .sql file, Django models.py, SQLAlchemy models, Prisma .prisma file, CSV, or Parquet. Auto-detects source type.
+- `source_path` (string, optional): Path to schema file/directory OR a live PostgreSQL DSN (postgresql:// or postgres://). File formats auto-detected: .sql DDL, dbt manifest.json, dbt project directories, LookML .lkml files, SQLite .db/.sqlite files, Django models.py, SQLAlchemy models, Prisma .prisma files, CSV/Parquet data files, pre-built SemanticSnapshot .json files.
 - `snapshot_json` (dict, optional): A pre-built SemanticSnapshot dict conforming to the schema. Must include a valid snapshot_id (SHA-256).
 - `snapshot_name` (string, default "default"): Logical name for storage/retrieval.
 
 Provide exactly one of source_path or snapshot_json.
 
-Returns: `{snapshot_id, snapshot_name, entities_count, fields_count, joins_count, source_type}`
+Returns: `{next_step, snapshot_id, snapshot_name, entities_count, fields_count, joins_count, source_type}`
 
 ### ingest_definition
 
-Store a certified business definition. Automatically injected into planner context at query time.
+Store a certified business definition that Boyce applies automatically at query time.
+
+Business definitions encode what your data means — the logic that lives in analysts' heads but never in the schema. Once stored, Boyce injects them into the planner whenever the term appears in a query. Upstream of ask_boyce — no extra steps needed after storing.
 
 Parameters:
 - `term` (string, required): Business term to define (e.g. "revenue", "active user", "churn rate"). Case-insensitive matching.
-- `definition` (string, required): Plain-language definition including exact business logic, edge cases, inclusions/exclusions.
-- `sql_expression` (string, optional): SQL expression implementing this definition. Use column names from the schema.
+- `definition` (string, required): Plain-language definition. Include exact business logic, edge cases, inclusions/exclusions.
+- `sql_expression` (string, optional): SQL expression implementing this definition. Boyce uses this as authoritative SQL for the concept.
 - `entity_hint` (string, optional): Table name this definition applies to.
 - `snapshot_name` (string, default "default"): Which snapshot these definitions apply to.
 
-Returns: `{term, snapshot_name, definitions_count}`
+Returns: `{next_step, term, snapshot_name, definitions_count}`
 
 ### get_schema
 
-Return full schema context + StructuredFilter documentation. Designed for MCP hosts whose LLM reads the schema and constructs queries directly.
+See what the database actually contains before writing a query.
+
+Returns full schema context — every table, column, type, nullable flag, join path with confidence weight, and certified business definition. Without this, your SQL is guessing at column names, types, and relationships. Includes StructuredFilter documentation with examples so you can construct a validated query for ask_boyce.
+
+Upstream of ask_boyce: construct a StructuredFilter from this schema, then pass it to ask_boyce for deterministic, safety-checked SQL.
 
 Parameters:
 - `snapshot_name` (string, default "default"): Previously ingested snapshot name.
 
-Returns: `{snapshot_id, snapshot_name, entities, joins, definitions, structured_filter_docs}`
+Returns: `{next_step, snapshot_id, snapshot_name, entities, joins, definitions, structured_filter_docs}`
 
 The `entities` array contains full field details: field_id, name, field_type, data_type, nullable, primary_key, description, valid_values.
 The `joins` array contains: join_id, source_entity_id, target_entity_id, join_type, source_field_id, target_field_id, weight, description.
 
 ### ask_boyce
 
-Tri-modal NL→SQL pipeline. Mode A requires no credentials (host LLM provides StructuredFilter). Mode B requires BOYCE_PROVIDER + BOYCE_MODEL.
+Answer data questions with SQL that has been safety-checked against the actual data.
+
+You can write SQL yourself. But you cannot know that the column you are filtering on is 30% NULL and will silently drop rows, or that the join you picked was inferred with low confidence and may produce duplicates. This tool checks your query against data reality before you run it — validated against 3 safety dimensions: NULL traps, EXPLAIN pre-flight, dialect compatibility.
+
+Recommended: call `get_schema` first, construct a StructuredFilter from the schema, pass it here. No API keys needed. Boyce compiles deterministic SQL.
 
 Parameters:
 - `natural_language_query` (string, optional): Free-form question. Required for Mode B/C. Omit for Mode A.
 - `structured_filter` (dict, optional): Pre-built StructuredFilter from `get_schema`. Triggers Mode A (deterministic, zero credentials).
 - `snapshot_name` (string, default "default"): Previously ingested snapshot.
-- `dialect` (string, default "redshift"): Target SQL dialect.
+- `dialect` (string, default "redshift"): Target SQL dialect. Supported: "redshift", "postgres", "duckdb", "bigquery".
 
 Modes:
 - Mode A: `structured_filter` provided → deterministic pipeline, zero LLM calls inside Boyce
 - Mode B: `natural_language_query` + BOYCE_PROVIDER configured → QueryPlanner (LiteLLM) → kernel
-- Mode C: `natural_language_query` + no credentials → returns schema guidance for host LLM to construct filter
+- Mode C: `natural_language_query` + no credentials → returns suggested_filter; call ask_boyce again with structured_filter set to it
 
-Pipeline (Mode A/B): StructuredFilter → kernel.process_request() → NULL trap check → EXPLAIN pre-flight → Redshift lint → audit.
+Pipeline (Mode A/B): StructuredFilter → kernel.process_request() → NULL trap check → EXPLAIN pre-flight → Redshift lint → audit
 
-Returns: `{sql, snapshot_id, snapshot_name, entities_resolved, validation, compat_risks, warning, null_trap_warnings}`
+Returns (Mode A/B):
+```json
+{
+  "next_step": "Pass the SQL above to query_database to execute it.",
+  "present_to_user": "...",     // only when material
+  "data_reality": {...},         // only when relevant
+  "sql": "SELECT ...",
+  "snapshot_id": "...",
+  "snapshot_name": "default",
+  "entities_resolved": [...],
+  "validation": {"status": "verified"|"invalid"|"unchecked", "error": null, "cost_estimate": 0.5},
+  "compat_risks": [...],         // only when present
+  "null_trap_warnings": [...]    // only when present
+}
+```
 
-validation object: `{status: "verified"|"invalid"|"unchecked", error: string|null, cost_estimate: number|null}`
+Returns (Mode C):
+```json
+{
+  "mode": "schema_guidance",
+  "message": "...",
+  "query": "...",
+  "snapshot_name": "default",
+  "relevant_entities": [...],
+  "structured_filter_docs": "..."
+}
+```
 
-NULL trap warning (when detected): `{code: "NULL_TRAP", severity: "HIGH", message: string}`
-null_trap_warnings array: `[{table, column, null_pct, null_count, row_count, filter_operator, filter_value, risk}]`
+Note: The returned SQL does not include ORDER BY or LIMIT. If ranking or row caps are needed ("top 5", "most expensive"), append them before passing to query_database.
 
 ### validate_sql
 
-Validate a hand-written SQL query through Boyce's safety layer without executing it. Use when you've written SQL directly (not via StructuredFilter) and want to check it first.
+Check SQL against data reality before running it.
+
+Catches three classes of problems invisible to schema inspection alone: NULL traps (columns in WHERE equality filters that are mostly NULL — rows silently vanish from results), broken execution plans (SQL that parses fine but fails EXPLAIN pre-flight), and dialect traps (Redshift compatibility issues that work on Postgres but fail on Redshift).
+
+Does NOT execute the query. Use this before passing hand-written SQL to query_database — it is the safety gate for SQL that did not come through ask_boyce.
 
 Parameters:
 - `sql` (string, required): A SELECT statement to validate.
 - `snapshot_name` (string, default "default"): Previously ingested snapshot (used for NULL risk analysis against WHERE clause columns).
 - `dialect` (string, default "redshift"): Target SQL dialect for compatibility linting.
 
-Returns: `{sql, validation, compat_risks, null_risk_columns}`
-- `validation`: `{status: "verified"|"invalid"|"unchecked", error: string|null, cost_estimate: number|null}`
-- `compat_risks`: list of Redshift compatibility warnings
-- `null_risk_columns`: list of columns in WHERE equality filters with high NULL rates
-
-Does NOT execute the query. Use `query_database` to run after validation.
+Returns:
+```json
+{
+  "next_step": "...",
+  "present_to_user": "...",     // only when issues found
+  "data_reality": {...},         // only when relevant
+  "sql": "SELECT ...",
+  "validation": {"status": "verified"|"invalid"|"unchecked", "error": null, "cost_estimate": null},
+  "compat_risks": [...],         // only when present
+  "null_risk_columns": [...]     // columns in WHERE equality filters that are nullable
+}
+```
 
 ### query_database
 
-Execute a read-only SELECT against the live database.
+Run SQL against the live database — read-only, with safety pre-flight.
+
+Every query is scanned for NULL traps and validated via EXPLAIN before execution. Write operations are rejected at two levels: keyword pre-check and a read-only transaction guard. Downstream of ask_boyce: use this to execute SQL that ask_boyce compiled. For hand-written SQL, run validate_sql first to catch problems before they reach the database.
 
 Parameters:
-- `sql` (string, required): A SELECT statement. Write operations (INSERT, UPDATE, DELETE, DDL) are rejected at two levels: pre-check keyword filter + readonly transaction.
-- `reason` (string, required): Brief explanation of why this query is needed. Logged for auditability.
+- `sql` (string, required): A SELECT statement. Write operations (INSERT, UPDATE, DELETE, DDL) rejected at two levels: keyword pre-check + readonly transaction.
+- `reason` (string, required): Brief explanation of why this query is needed. Logged for auditability — does not affect query execution.
+- `snapshot_name` (string, default "default"): Snapshot used for NULL risk analysis (matching WHERE clause columns against snapshot field metadata).
 
-Returns: `{rows: [...], row_count: N, reason: string}`
+Returns:
+```json
+{
+  "next_step": "...",
+  "present_to_user": "...",     // only when NULL risk detected
+  "rows": [...],
+  "row_count": N,
+  "reason": "...",
+  "validation": {"status": "verified"|"invalid"|"unchecked", "error": null, "cost_estimate": null},
+  "null_risk_columns": [...]    // only when present
+}
+```
 
 Requires: BOYCE_DB_URL env var + asyncpg installed.
 
 ### profile_data
 
-Analyze a column in the live database. Returns null count, distinct count, min/max.
+See how a column actually behaves — null rate, distinct count, min/max.
+
+Use before filtering or joining on a column to know whether it will do what you expect. A column named "status" might be 40% NULL. A column named "email" might have 3 distinct values. The schema tells you types. This tells you truth. Complements get_schema (structure) with real data distributions.
 
 Parameters:
-- `table` (string, required): Table name. Bare (e.g. "orders") or schema-qualified (e.g. "public.orders"). Only alphanumeric, underscores, dots allowed.
+- `table` (string, required): Table name. Bare (e.g. "orders") or schema-qualified (e.g. "public.orders"). Only alphanumeric characters, underscores, and dots allowed — injection attempts are rejected.
 - `column` (string, required): Column name (same character restrictions).
 
-Returns: `{table, column, row_count, null_count, null_pct, distinct_count, min_value, max_value}`
+Returns:
+```json
+{
+  "next_step": "Use these distributions to inform your next ask_boyce query or validate assumptions before joining.",
+  "table": "orders",
+  "column": "status",
+  "row_count": 10000,
+  "null_count": 2847,
+  "null_pct": 28.47,
+  "distinct_count": 4,
+  "min_value": "active",
+  "max_value": "pending"
+}
+```
 
 Requires: BOYCE_DB_URL env var + asyncpg installed.
 
@@ -230,6 +357,12 @@ The JSON contract between intent and SQL generation. Construct this from `get_sc
 
 ### Aggregation Types
 SUM, COUNT, COUNT_DISTINCT, AVG, MIN, MAX
+
+### grain_context Keys
+- aggregation_required: true when metrics are present (triggers GROUP BY)
+- grouping_fields: list of field_ids to group by
+- date_trunc_field: field_id of a date/timestamp dimension to truncate (optional)
+- date_trunc_unit: truncation granularity: "day", "week", "month", "quarter", "year"
 
 ### Rules
 1. Every entity_id and field_id must exist in the snapshot returned by get_schema.
