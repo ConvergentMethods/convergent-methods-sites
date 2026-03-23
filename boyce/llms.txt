@@ -2,7 +2,7 @@
 
 > AI agents querying databases without Boyce generate SQL that looks correct and returns wrong answers. A naive equality filter on a column with 30% NULLs silently drops those rows — no error, no warning, just missing data. Boyce catches this before the query runs.
 
-Boyce is an MCP server exposing 7 tools. Deterministic SQL compiler — same inputs produce identical SQL, byte-for-byte, every time. Zero LLM calls in the SQL compiler. MIT licensed. Python 3.10+.
+Boyce is an MCP server exposing 8 tools. Deterministic SQL compiler — same inputs produce identical SQL, byte-for-byte, every time. Zero LLM calls in the SQL compiler. MIT licensed. Python 3.10+.
 
 ## Install
 
@@ -19,7 +19,7 @@ Run `boyce init` to auto-detect your MCP host and write the config. Supported ho
 
 Add `boyce` to your mcpServers config. Set `BOYCE_DB_URL` to your PostgreSQL DSN (optional — omit for schema-only mode; EXPLAIN pre-flight returns `"unchecked"` without it).
 
-MCP hosts do not need a Boyce API key. The host LLM calls `get_schema`, constructs a StructuredFilter, calls `ask_boyce` (Mode A). Only Mode B/C requires `BOYCE_PROVIDER` + `BOYCE_MODEL`.
+MCP hosts do not need a Boyce API key or any credentials. The host LLM calls `get_schema`, constructs a StructuredFilter, and passes it to `ask_boyce` for deterministic compilation. `BOYCE_PROVIDER` + `BOYCE_MODEL` are only required for the CLI (`boyce ask`) and HTTP API (`boyce serve --http`).
 
 ## MCP Tools
 
@@ -30,6 +30,7 @@ MCP hosts do not need a Boyce API key. The host LLM calls `get_schema`, construc
 - `validate_sql`: Check SQL against data reality before running it — catches NULL traps, broken execution plans, Redshift dialect traps without executing
 - `query_database`: Run SQL against the live database — read-only, with NULL risk scan and EXPLAIN pre-flight on every query
 - `profile_data`: See how a column actually behaves — null rate, distinct count, min/max
+- `check_health`: Operational health check — DB connectivity, snapshot freshness, actionable fix commands. Call when queries fail unexpectedly.
 
 ## Response Format
 

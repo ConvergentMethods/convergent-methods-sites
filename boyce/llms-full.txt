@@ -4,7 +4,7 @@ Version: see PyPI for current release
 
 Without Boyce, agents querying databases generate SQL that looks correct and returns wrong answers — silently. A naive equality filter on a column with 30% NULLs drops those rows with no error. A join resolved by name-match instead of foreign key produces duplicates. Boyce checks SQL against data reality before it runs.
 
-Boyce is an MCP server exposing 7 tools. The SQL compiler uses zero LLM calls — same inputs produce identical SQL, byte-for-byte, every time. MIT licensed. Python 3.10+.
+Boyce is an MCP server exposing 8 tools. The SQL compiler uses zero LLM calls — same inputs produce identical SQL, byte-for-byte, every time. MIT licensed. Python 3.10+.
 
 ## Install
 
@@ -23,7 +23,7 @@ To verify Boyce is running after MCP config: call `get_schema` — if it returns
 
 ### Path 1: MCP Hosts (Claude Code, Cursor, VS Code, Codex, DataGrip, Claude Desktop, Windsurf)
 
-No Boyce API key needed. The host LLM calls `get_schema` to read the database schema, constructs a `StructuredFilter`, and passes it to `ask_boyce` (Mode A). Boyce compiles deterministic SQL with zero LLM calls.
+No Boyce API key needed. The host LLM calls `get_schema` to read the database schema, constructs a `StructuredFilter`, and passes it to `ask_boyce`. Boyce compiles deterministic SQL with zero LLM calls.
 
 Setup wizard: `boyce init` (auto-detects host and writes config)
 
@@ -73,6 +73,7 @@ Uses LiteLLM — supports Anthropic, OpenAI, Ollama (local), vLLM (local), Azure
 - `boyce serve --http [--port 8741]`: HTTP API mode (Starlette + Bearer auth)
 - `boyce init`: Setup wizard for MCP host configuration
 - `boyce scan <path>`: Scan directory, auto-detect sources, output JSON report
+- `boyce doctor [--json]`: Check environment health — editors, database, snapshots, server config
 
 ## Environment Variables
 
@@ -99,8 +100,8 @@ Directive language specifying the exact next tool and action. Follow it.
 | ingest_source | success | "Snapshot '{name}' is ready. Use get_schema to explore tables, or ask_boyce with a natural language question to query immediately." |
 | ingest_definition | success | "Definition stored. ask_boyce will apply it automatically — no additional steps needed." |
 | get_schema | success | "Use this schema to construct a StructuredFilter for ask_boyce. Specify table, columns, and conditions." |
-| ask_boyce | Mode A/B success | "Pass the SQL above to query_database to execute it." |
-| ask_boyce | Mode C | "Call ask_boyce again with the suggested_filter above as the structured_filter parameter." |
+| ask_boyce | SQL compiled successfully | "Pass the SQL above to query_database to execute it." |
+| ask_boyce | No StructuredFilter + no credentials | "Call ask_boyce(structured_filter=ready_filter) to compile validated SQL." |
 | validate_sql | clean | "SQL passed all checks. Pass to query_database to execute." |
 | validate_sql | issues found | "Issues detected. Resubmit the original question through ask_boyce for automatic remediation, or fix manually and re-validate." |
 | query_database | clean | "Query complete. Use profile_data on any column to inspect distributions before building downstream logic." |
@@ -139,7 +140,7 @@ Example response with all advertising fields:
 
 ## MCP Tools — Complete Reference
 
-7 tools total. All queries validated against 3 safety dimensions: NULL traps, EXPLAIN pre-flight, dialect compatibility. All tools work without LLM provider config except `ask_boyce` Mode B/C (requires `BOYCE_PROVIDER` + `BOYCE_MODEL`). Live database tools (`query_database`, `profile_data`, `validate_sql` EXPLAIN) also require `BOYCE_DB_URL` + asyncpg installed.
+8 tools total. All queries validated against 3 safety dimensions: NULL traps, EXPLAIN pre-flight, dialect compatibility. All tools work without LLM provider config. MCP hosts (Path 1) never need `BOYCE_PROVIDER`. CLI/HTTP path (`boyce ask`, `boyce serve --http`) requires `BOYCE_PROVIDER` + `BOYCE_MODEL`. Live database tools (`query_database`, `profile_data`, `validate_sql` EXPLAIN) also require `BOYCE_DB_URL` + asyncpg installed.
 
 ### ingest_source
 
@@ -198,19 +199,19 @@ You can write SQL yourself. But you cannot know that the column you are filterin
 Recommended: call `get_schema` first, construct a StructuredFilter from the schema, pass it here. No API keys needed. Boyce compiles deterministic SQL.
 
 Parameters:
-- `natural_language_query` (string, optional): Free-form question. Required for Mode B/C. Omit for Mode A.
-- `structured_filter` (dict, optional): Pre-built StructuredFilter from `get_schema`. Triggers Mode A (deterministic, zero credentials).
+- `natural_language_query` (string, optional): Free-form question. Required for CLI/HTTP path. Omit when passing a `structured_filter` directly.
+- `structured_filter` (dict, optional): Pre-built StructuredFilter from `get_schema`. Triggers deterministic compilation with zero LLM calls inside Boyce. This is the MCP host path.
 - `snapshot_name` (string, default "default"): Previously ingested snapshot.
 - `dialect` (string, default "redshift"): Target SQL dialect. Supported: "redshift", "postgres", "duckdb", "bigquery".
 
-Modes:
-- Mode A: `structured_filter` provided → deterministic pipeline, zero LLM calls inside Boyce
-- Mode B: `natural_language_query` + BOYCE_PROVIDER configured → QueryPlanner (LiteLLM) → kernel
-- Mode C: `natural_language_query` + no credentials → returns suggested_filter; call ask_boyce again with structured_filter set to it
+Delivery paths:
+- **MCP host path** (default): Host LLM builds `structured_filter` from `get_schema` and passes it here. Boyce compiles deterministically, zero credentials needed.
+- **CLI/HTTP path**: `natural_language_query` + `BOYCE_PROVIDER` configured → Boyce's internal QueryPlanner (LiteLLM) → kernel. Requires `BOYCE_PROVIDER` + `BOYCE_MODEL`.
+- **Schema guidance fallback**: `natural_language_query` + no credentials → returns `ready_filter`; call `ask_boyce(structured_filter=ready_filter)` to compile validated SQL.
 
-Pipeline (Mode A/B): StructuredFilter → kernel.process_request() → NULL trap check → EXPLAIN pre-flight → Redshift lint → audit
+Pipeline (MCP or CLI/HTTP): StructuredFilter → kernel.process_request() → NULL trap check → EXPLAIN pre-flight → Redshift lint → audit
 
-Returns (Mode A/B):
+Returns (SQL compiled successfully):
 ```json
 {
   "next_step": "Pass the SQL above to query_database to execute it.",
@@ -226,7 +227,7 @@ Returns (Mode A/B):
 }
 ```
 
-Returns (Mode C):
+Returns (schema guidance fallback):
 ```json
 {
   "mode": "schema_guidance",
@@ -319,9 +320,33 @@ Returns:
 
 Requires: BOYCE_DB_URL env var + asyncpg installed.
 
+### check_health
+
+Operational health check — database connectivity, snapshot freshness, and schema drift.
+
+Call when a query fails unexpectedly, when you suspect stale data, or when Boyce suggests running a health check. Returns actionable diagnostics with specific fix commands. Use this before debugging query failures yourself — a failed EXPLAIN or missing table often means the snapshot is stale, not that your SQL is wrong.
+
+Parameters:
+- `snapshot_name` (string, default "default"): Snapshot to check health for.
+
+Returns:
+```json
+{
+  "next_step": "...",
+  "present_to_user": "...",
+  "status": "ok"|"warnings"|"errors",
+  "database": {...},
+  "snapshot": {...},
+  "server": {...},
+  "suggestions": ["Run boyce scan ./path to re-ingest", ...]
+}
+```
+
+Also available as CLI: `boyce doctor [--json]` — runs the same checks with human-readable output (or JSON with `--json`).
+
 ## StructuredFilter Format
 
-The JSON contract between intent and SQL generation. Construct this from `get_schema` output and pass to `ask_boyce` (Mode A).
+The JSON contract between intent and SQL generation. Construct this from `get_schema` output and pass to `ask_boyce`.
 
 ```json
 {
@@ -408,7 +433,7 @@ Auto-detection: `boyce scan ./path/` walks the directory tree and detects all pa
 - process_request() takes a single snapshot — multi-snapshot merge not yet implemented
 - PostgresAdapter supports asyncpg only (Postgres/Redshift) — no BigQuery or DuckDB live adapter
 - SemanticGraph is in-memory; rebuilt from persisted snapshots on server start
-- ask_boyce Mode B/C requires LLM provider config; Mode A (StructuredFilter) does not
+- ask_boyce CLI/HTTP path requires LLM provider config (BOYCE_PROVIDER + BOYCE_MODEL); MCP host path (StructuredFilter) does not
 
 ## Links
 
