@@ -155,6 +155,8 @@
 
       <p>This is the <strong>Null Trap</strong>. It&rsquo;s one of the many bits of embedded knowledge in the daily workflow of a data engineer, data scientist, or data analyst. What&rsquo;s changed is that AI agents now run hundreds of queries a day against your data, autonomously, with no human reviewing the results. A senior engineer gets a number back and thinks &ldquo;let me sanity check that.&rdquo; An agent gets a number back and puts it in your dashboard. The Null Trap went from an occasional human mistake to a systematic bias across every filtered result an agent produces.</p>
 
+      <p>NULL is the cleanest demonstration of a more general pattern &mdash; one we&rsquo;ll come back to at the end. For now, sit with NULL specifically, because it&rsquo;s the crispest case of what goes wrong when an agent queries data without looking at it first.</p>
+
       <hr>
 
       <h2>Why NULLs Are Different From Wrong Values</h2>
@@ -197,6 +199,30 @@
       <p>A senior data engineer knows this. They&rsquo;ve been burned by it. They habitually write <code>AND status IS NOT NULL</code> or <code>COALESCE(status, 'unknown')</code>. But the reason they know is because they shipped a wrong number, noticed it a week later, and traced it back to a nullable column.</p>
 
       <p>An AI agent has no such scars.</p>
+
+      <hr>
+
+      <h2>&ldquo;This Is Data Quality 101&rdquo;</h2>
+
+      <p>A fair objection. For humans, yes &mdash; every data engineer who has spent more than a year in production has internalized some version of &ldquo;check your NULLs.&rdquo; The correct response to <code>WHERE status = 'cancelled'</code> is, for a human with scars, &ldquo;before I run that, how many NULLs are in <code>status</code>?&rdquo;</p>
+
+      <p>What&rsquo;s new is the volume. The hygiene that a senior engineer does by habit &mdash; pausing to sanity check before shipping a number &mdash; is a habit formed from having shipped wrong numbers and gotten paged at 2am. An agent forms no such habits. It generates clean SQL, gets a clean result, and moves on. When a single agent session runs hundreds of filtered queries with no human review, a habit that used to catch one wrong number a month now has to catch them all, at machine speed, or it doesn&rsquo;t catch any of them. The hygiene has to move from a human habit to a property of the infrastructure.</p>
+
+      <p>&ldquo;Data quality 101&rdquo; was the right framing when humans were the bottleneck. When agents are the bottleneck, hygiene becomes infrastructure, or it doesn&rsquo;t exist.</p>
+
+      <hr>
+
+      <h2>&ldquo;Why Not Just Tell the Agent to Use COALESCE?&rdquo;</h2>
+
+      <p>Another fair objection. <code>COALESCE(status, 'unknown')</code> replaces NULL with a default value, which makes the row visible to the filter. Couldn&rsquo;t you just prompt the agent to always use COALESCE?</p>
+
+      <p>Two problems.</p>
+
+      <p>First, COALESCE requires the agent to <em>decide</em> that NULLs matter for this specific column. That decision requires knowing how many NULLs there are. If the agent assumes <code>status</code> is fully populated &mdash; because nothing in the schema says otherwise &mdash; it won&rsquo;t reach for COALESCE. The agent doesn&rsquo;t skip COALESCE out of forgetfulness; it skips because it has no reason to think the column needs defending.</p>
+
+      <p>Second, COALESCEing blindly is itself a bug. <code>COALESCE(status, 'cancelled')</code> silently reclassifies every incomplete-onboarding user as cancelled &mdash; a different wrong answer, wearing the costume of a fix. The right default for a NULL depends on what the NULL <em>means</em>, and the NULL&rsquo;s meaning lives in the data, not the schema.</p>
+
+      <p>Either way, the agent needs to see the data before deciding what to do about it. COALESCE is the cure; profiling is the diagnosis. You can&rsquo;t skip the diagnosis.</p>
 
       <hr>
 
@@ -248,6 +274,16 @@ max: 'cancelled'</code></pre>
 
       <hr>
 
+      <h2>&ldquo;Doesn&rsquo;t dbt&rsquo;s Semantic Layer Already Solve This?&rdquo;</h2>
+
+      <p>dbt and other semantic layers define the <em>relationships</em> between entities and the <em>formulas</em> for metrics. &ldquo;Monthly recurring revenue = sum of paid line item amounts, where subscription status is active.&rdquo; That&rsquo;s load-bearing infrastructure and it solves an important problem: it gives agents vocabulary at the concept level rather than the column level.</p>
+
+      <p>But the semantic layer sits on top of the data. It doesn&rsquo;t inspect the data. A dbt model that computes &ldquo;active subscriptions&rdquo; using <code>WHERE status = 'active'</code> falls into the same trap &mdash; it&rsquo;s just that the trap is now encoded in a definition file instead of an ad-hoc query. The concept <code>active_subscriptions</code> is defined in terms of a column whose NULL distribution nobody looked at. The dbt user gets a number; the number is wrong; the definition looks canonical.</p>
+
+      <p>Semantic layers say <em>what</em> to compute. Profiling says <em>whether the data supports that computation</em>. They compose. They don&rsquo;t substitute.</p>
+
+      <hr>
+
       <h2>The Fix Isn&rsquo;t a Better Model</h2>
 
       <p>The next GPT Codex won&rsquo;t fix this. The next Claude Opus won&rsquo;t fix this. Smarter models can reason better about what data they see, but a model can&rsquo;t see what the infrastructure doesn&rsquo;t show it. The schema is metadata. The data is reality. No amount of reasoning about metadata reveals the distribution of actual values.</p>
@@ -266,15 +302,17 @@ max: 'cancelled'</code></pre>
 
       <hr>
 
-      <h2>What This Means for Production</h2>
+      <h2>What the Solution Has to Do</h2>
 
-      <p>If you&rsquo;re giving AI agents access to production databases &mdash; and increasingly, everyone is &mdash; you need a layer between the agent and your data that does three things:</p>
+      <p>Any layer sitting between agents and databases has to close the gap between what the schema says and what the data actually looks like. That closure requires three properties, and they&rsquo;re independent of who implements them:</p>
 
-      <p><strong>1. Profile before querying.</strong> When the agent constructs a filter on <code>status = 'cancelled'</code>, the tooling checks the NULL rate of that column and surfaces it. If 30% of the column is NULL, the agent knows before the query runs &mdash; not after the dashboard ships.</p>
+      <p><strong>Profile before querying.</strong> When an agent constructs a filter on <code>status = 'cancelled'</code>, something needs to check the NULL rate of that column and surface it. If 30% of the column is NULL, the agent knows before the query runs &mdash; not after the dashboard ships.</p>
 
-      <p><strong>2. Validate before executing.</strong> Run <code>EXPLAIN</code> on the generated SQL before it touches real data. Catch type mismatches, missing tables, and impossible joins at planning time, not in the error log.</p>
+      <p><strong>Validate before executing.</strong> Run <code>EXPLAIN</code> on the generated SQL before it touches real data. Catch type mismatches, missing tables, and impossible joins at planning time, not in the error log.</p>
 
-      <p><strong>3. Make it deterministic.</strong> If the same question produces different SQL on different runs, you can&rsquo;t audit it, reproduce it, or trust it. The SQL compilation step &mdash; from structured intent to query string &mdash; should be deterministic. Same inputs, same SQL, every time.</p>
+      <p><strong>Make it deterministic.</strong> If the same question produces different SQL on different runs, you can&rsquo;t audit it, reproduce it, or trust it. The SQL compilation step &mdash; from structured intent to query string &mdash; should be deterministic. Same inputs, same SQL, every time.</p>
+
+      <p>These three properties describe the shape of any correct solution. Specific implementations will differ. The properties don&rsquo;t.</p>
 
       <hr>
 
@@ -283,6 +321,8 @@ max: 'cancelled'</code></pre>
       <p>The deeper issue is the gap between what the schema says and what the data actually looks like. NULLs are the most common case, but the same structural problem shows up as cardinality surprises (a <code>country</code> column with 3 distinct values when you expected 195), stale data (a <code>last_updated</code> max of 18 months ago because the pipeline broke), and encoding drift (<code>'active'</code> vs <code>'Active'</code> vs <code>'ACTIVE'</code> &mdash; three values a case-sensitive filter treats as different).</p>
 
       <p>Same pattern every time: correct SQL, incorrect assumptions, wrong answer. Nobody knew.</p>
+
+      <p>The Null Trap is the first instance you hit. Once you start looking for it, you find its siblings everywhere.</p>
 
       <hr>
 
