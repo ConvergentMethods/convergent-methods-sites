@@ -330,7 +330,7 @@ max: 'cancelled'</code></pre>
 
       <div class="essay-cta">
         <p><a href="/boyce/"><strong>Boyce</strong></a> is an open-source MCP server that sits between your AI agent and your database. When an agent asks to query a table, Boyce profiles the relevant columns first &mdash; NULL rates, distinct values, distributions &mdash; and hands that context to the agent alongside the schema. The agent sees the trap before it writes the query, not after.</p>
-        <p>Agent asks <em>&ldquo;how many cancelled subscriptions?&rdquo;</em> &mdash; Boyce profiles the <code>status</code> column, surfaces the 30% NULL rate, and the agent asks you what to do about it before generating SQL. No wrong answer ships. No silent exclusion.</p>
+        <p>Agent asks <em>&ldquo;how many cancelled subscriptions?&rdquo;</em> &mdash; Boyce profiles the <code>status</code> column, surfaces the 30% NULL rate, and the agent asks you what to do about it before generating SQL. The trap surfaces before the query runs. No silent exclusion.</p>
         <pre style="margin:1rem 0 0.75rem;"><code class="language-bash">pip install boyce</code></pre>
         <p class="muted">MIT licensed. Works with Claude Desktop, Cursor, Claude Code, and any MCP-compatible host. No API key required.</p>
         <p class="muted">The Null Trap scenario from this essay is included in the repo as a self-contained Docker setup. Reproduce it in under five minutes.</p>
