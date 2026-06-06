@@ -1,7 +1,8 @@
 # convergentmethods.com — Site Plan
 
 **Created:** 2026-03-11 (CEO directive)
-**Priority:** Low. Comes after boyce.io.
+**Status:** COMPLETE — deployed 2026-03-13 via GitHub Pages (main branch, no build step).
+**Live at:** convergentmethods.com/boyce/ (full product page, Mineral palette, Null Trap essay)
 
 ---
 
@@ -22,8 +23,7 @@ can identify the company and its products.
 ## Content (single page)
 
 - Company name and one-line description
-- Products (link to boyce.io, mention BloodHound as "coming soon" if
-  appropriate at time of build)
+- Products (link to boyce.io)
 - "Built by Will Wright" — brief founder line
 - Contact: will@convergentmethods.com
 - Legal: Convergent Methods LLC, Idaho

@@ -3,7 +3,7 @@
 **Created:** 2026-03-13
 **Author:** CTO (Opus planning pass)
 **Executor:** Sonnet · medium
-**Status:** AWAITING APPROVAL
+**Status:** EXECUTED — site deployed 2026-03-13 via GitHub Pages. Kept as historical design spec.
 
 ---
 
