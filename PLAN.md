@@ -1,10 +1,21 @@
 # convergentmethods.com — Site Plan
 
 **Created:** 2026-03-11 (CEO directive)
-**Status:** COMPLETE — deployed 2026-03-13 via GitHub Pages (main branch, no build step).
-**Live at:** convergentmethods.com/boyce/ (full product page, Mineral palette, Null Trap essay)
+**Historical launch:** 2026-03-13.
+**Current host (verified 2026-09-25):** Cloudflare Pages project
+`convergent-methods-sites.pages.dev`, serving `convergentmethods.com`.
+GitHub Pages also serves a separate project-path copy. The Cloudflare Pages
+source/deployment trigger is not yet verified; do not treat a GitHub push as
+proof of a live custom-domain deployment.
+**Content status:** The live homepage and Boyce pages still represent the
+pre-2026-06-12 AI/developer-tools focus. Convergent Methods now builds games;
+the public site needs a founder-directed revision. Boyce is legacy/archived.
 
 ---
+
+The original March 2026 brief below is retained as launch history, not as a
+current redesign specification. New content must follow the game-development
+focus above.
 
 ## Purpose
 
@@ -32,8 +43,8 @@ can identify the company and its products.
 ## Technical
 
 - Static HTML, hosted on Cloudflare Pages
-- All three domains (convergentmethods.com, .ai, .io) should resolve
-  to the same page
+- `convergentmethods.ai` and `.io` redirect to the `.com` homepage
+- `boyce.io` redirects to the legacy `/boyce/` page
 - No framework needed — this is one page
 
 ## Acceptance Criteria

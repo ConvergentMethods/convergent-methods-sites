@@ -1,6 +1,13 @@
 # convergentmethods.com
 
-Public website for Convergent Methods LLC. Deployed via GitHub Pages.
+Public website source for Convergent Methods LLC. The live custom domain is
+served by Cloudflare Pages, not GitHub Pages. This repository also has a
+separate GitHub Pages copy at
+`https://convergentmethods.github.io/convergent-methods-sites/`.
+
+The published copy still describes the pre-2026-06-12 AI/developer-tools
+business. Convergent Methods is now a game-development company; the site needs
+a content and design revision before it accurately represents the company.
 
 ## Structure
 
@@ -16,11 +23,17 @@ boyce/
 
 ## Deployment
 
-Push to `main` branch. GitHub Pages deploys automatically.
+As verified on 2026-09-25, `https://convergentmethods.com/` matches the
+Cloudflare Pages project at `https://convergent-methods-sites.pages.dev/`.
+Cloudflare Pages and GitHub Pages respond differently for missing paths; the
+custom domain follows the Cloudflare Pages behavior. **Do not assume a push to
+`main` updates the live custom domain:** whether the Cloudflare Pages project
+is connected to this GitHub repository or receives direct uploads remains
+unverified until its deployment settings are read in the Cloudflare dashboard.
 
-- **Domain:** convergentmethods.com (DNS via Namecheap)
+- **Registrar:** Namecheap; **DNS and live hosting:** Cloudflare
 - **Redirects:** convergentmethods.ai and convergentmethods.io redirect to .com
-- **HTTPS:** Auto-provisioned by GitHub via Let's Encrypt
+- **HTTPS:** Served through Cloudflare on the live domain
 
 ## URLs
 
