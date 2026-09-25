@@ -23,13 +23,12 @@ boyce/
 
 ## Deployment
 
-As verified on 2026-09-25, `https://convergentmethods.com/` matches the
-Cloudflare Pages project at `https://convergent-methods-sites.pages.dev/`.
-Cloudflare Pages and GitHub Pages respond differently for missing paths; the
-custom domain follows the Cloudflare Pages behavior. **Do not assume a push to
-`main` updates the live custom domain:** whether the Cloudflare Pages project
-is connected to this GitHub repository or receives direct uploads remains
-unverified until its deployment settings are read in the Cloudflare dashboard.
+The current hosting/deployment source of truth is
+`ConvergentMethods/convergent-methods-ceo/ops/web-presence/README.md` in the main CM
+repository. As verified on 2026-09-25, `https://convergentmethods.com/` matches
+the Cloudflare Pages project at `https://convergent-methods-sites.pages.dev/`.
+**Do not assume a push to `main` updates the live custom domain:** the
+Cloudflare Pages source trigger requires authenticated dashboard readback.
 
 - **Registrar:** Namecheap; **DNS and live hosting:** Cloudflare
 - **Redirects:** convergentmethods.ai and convergentmethods.io redirect to .com
@@ -45,4 +44,5 @@ unverified until its deployment settings are read in the Cloudflare dashboard.
 
 ## Domain Portfolio
 
-See `ASSETS.md` at the ConvergentMethods root for complete domain inventory.
+See `ops/web-presence/README.md` in the main ConvergentMethods repository for
+the complete, current domain inventory and operating procedure.

@@ -2,6 +2,9 @@
 
 **Created:** 2026-03-11 (CEO directive)
 **Historical launch:** 2026-03-13.
+**Current web-presence source of truth:** `ops/web-presence/README.md` in the
+main ConvergentMethods repository. This plan is historical content direction,
+not an independent hosting or deployment runbook.
 **Current host (verified 2026-09-25):** Cloudflare Pages project
 `convergent-methods-sites.pages.dev`, serving `convergentmethods.com`.
 GitHub Pages also serves a separate project-path copy. The Cloudflare Pages

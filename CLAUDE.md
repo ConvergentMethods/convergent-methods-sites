@@ -6,10 +6,11 @@ master_hints: convergentmethods
 
 # CLAUDE.md — sites/convergentmethods
 
-This repository contains the convergentmethods.com website source. As of
-2026-09-25 the live domain is served by Cloudflare Pages; GitHub Pages hosts a
-separate copy. Read `README.md` for the verified hosting boundary. The
-Cloudflare Pages deployment trigger is not yet verified.
+This repository contains the convergentmethods.com website source. The single
+current operating record is `ops/web-presence/README.md` in the main
+ConvergentMethods repository. As of 2026-09-25 the live domain is served by
+Cloudflare Pages; GitHub Pages hosts a separate copy. The Cloudflare Pages
+deployment trigger is not yet verified.
 
 You do NOT touch product codebases or other workstreams.
 
