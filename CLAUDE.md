@@ -9,8 +9,8 @@ master_hints: convergentmethods
 This repository contains the convergentmethods.com website source. The single
 current operating record is `ops/web-presence/README.md` in the main
 ConvergentMethods repository. As of 2026-09-25 the live domain is served by
-Cloudflare Pages; GitHub Pages hosts a separate copy. The Cloudflare Pages
-deployment trigger is not yet verified.
+Cloudflare Pages; GitHub Pages hosts a separate copy. Cloudflare automatically
+deploys this repository's `main` branch (authenticated settings verified).
 
 You do NOT touch product codebases or other workstreams.
 
@@ -21,8 +21,8 @@ You do NOT touch product codebases or other workstreams.
 - The published homepage still describes that former business. Treat it as
   stale public content awaiting a founder-directed redesign, not as current
   company strategy.
-- Keep hosting and content documentation factual. Verify the Cloudflare Pages
-  deployment path before claiming a repository push updates the live domain.
+- Keep hosting and content documentation factual. After a push, verify the
+  exact commit's Cloudflare deployment and live custom-domain content.
 
 ## Design Rules
 - Minimal, professional, credible. One page.

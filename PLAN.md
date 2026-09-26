@@ -7,9 +7,9 @@ main ConvergentMethods repository. This plan is historical content direction,
 not an independent hosting or deployment runbook.
 **Current host (verified 2026-09-25):** Cloudflare Pages project
 `convergent-methods-sites.pages.dev`, serving `convergentmethods.com`.
-GitHub Pages also serves a separate project-path copy. The Cloudflare Pages
-source/deployment trigger is not yet verified; do not treat a GitHub push as
-proof of a live custom-domain deployment.
+GitHub Pages also serves a separate project-path copy. Authenticated Cloudflare
+settings confirm automatic production deployments from this repository's
+`main` branch. Verify deployment success and the custom domain after a push.
 **Content status:** The live homepage and Boyce pages still represent the
 pre-2026-06-12 AI/developer-tools focus. Convergent Methods now builds games;
 the public site needs a founder-directed revision. Boyce is legacy/archived.

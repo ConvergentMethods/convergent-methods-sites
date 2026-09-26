@@ -27,8 +27,11 @@ The current hosting/deployment source of truth is
 `ConvergentMethods/convergent-methods-ceo/ops/web-presence/README.md` in the main CM
 repository. As verified on 2026-09-25, `https://convergentmethods.com/` matches
 the Cloudflare Pages project at `https://convergent-methods-sites.pages.dev/`.
-**Do not assume a push to `main` updates the live custom domain:** the
-Cloudflare Pages source trigger requires authenticated dashboard readback.
+Authenticated dashboard readback confirms this GitHub repository is connected
+to Cloudflare Pages, with automatic production deployments from `main`, no
+build command, and output `./`. Verify the exact commit's successful Pages
+deployment and custom-domain content after each publish; a push alone is not
+completion evidence. Full procedure/settings belong to the canonical record.
 
 - **Registrar:** Namecheap; **DNS and live hosting:** Cloudflare
 - **Redirects:** convergentmethods.ai and convergentmethods.io redirect to .com
